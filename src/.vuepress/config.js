@@ -4,12 +4,12 @@ module.exports = {
   base: "/os-dev/",
   locales: {
     "/": {
-      lang: "中文",
+      lang: "zh-CN",
       title: "操作系统开发",
       description: "操作系统开发",
     },
     "/en-US/": {
-      lang: "English",
+      lang: "en-US",
       title: "OS DEV",
       description: "os dev",
     },
