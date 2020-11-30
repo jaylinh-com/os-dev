@@ -1,7 +1,7 @@
 const { description } = require('../../package')
 
 module.exports = {
-  base: "/",
+  base: "/os-dev/",
   locales: {
     "/": {
       lang: "zh-CN",
