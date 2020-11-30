@@ -1,23 +1,23 @@
 const { description } = require('../../package')
 
 module.exports = {
-  base: "/os-dev/",
+  base: "/",
   locales: {
     "/": {
       lang: "zh-CN",
-      title: "操作系统开发",
-      description: "操作系统开发",
+      title: "手写一个简单的操作系统",
+      description: "本项目设计的目的不是替代像Minix这样的优秀项目，而是作为学习这些优秀项目以及开发操作系统的垫脚石。",
     },
     "/en-US/": {
       lang: "en-US",
-      title: "OS DEV",
-      description: "os dev",
+      title: "Writing a Simple Operating System from Scratch",
+      description: "Writing a Simple Operating System from Scratch",
     },
   },
   /**
    * Ref：https://v1.vuepress.vuejs.org/config/#title
    */
-  title: "操作系统开发",
+  title: "手写一个简单的操作系统",
   /**
    * Ref：https://v1.vuepress.vuejs.org/config/#description
    */
@@ -71,16 +71,23 @@ function zhLocales() {
     lastUpdated: "最近更新",
     nav: [
       { text: "主页", link: "/" },
-      { text: "示例", link: "/guide/" },
+      { text: "文档", link: "/os-dev/introduction" },
     ],
     sidebar: {
-      "/guide/": [
+      "/os-dev/": [
         {
-          title: "Guide",
+          title: "",
           collapsable: false,
-          children: ["", "using-vue"],
+          children: ["introduction", "computer-architecture-and-the-boot-process", "boot-sector-programming"],
         },
       ],
+      // "/guide/": [
+      //   {
+      //     title: "Guide",
+      //     collapsable: false,
+      //     children: ["", "using-vue"],
+      //   },
+      // ],
     },
   };
 }
@@ -96,9 +103,9 @@ function enLocales() {
       { text: "Example", link: "/en-US/guide/" },
     ],
     sidebar: {
-      "/en-US/guide/": [
+      "/en-US/os-dev/": [
         {
-          title: "Guide",
+          title: "introduction",
           collapsable: false,
           children: ["", "using-vue"],
         },
