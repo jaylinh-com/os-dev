@@ -71,10 +71,10 @@ function zhLocales() {
     lastUpdated: "最近更新",
     nav: [
       { text: "主页", link: "/" },
-      { text: "文档", link: "/os-dev/introduction" },
+      { text: "文档", link: "/doc/introduction" },
     ],
     sidebar: {
-      "/os-dev/": [
+      "/doc/": [
         {
           title: "",
           collapsable: false,
