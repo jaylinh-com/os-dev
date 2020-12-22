@@ -465,3 +465,44 @@ dw 0xaa55
 ```
 
 ### 3.4.6 调用函数
+在高级语言中，我们将较大的问题分解为函数，本质上函数就是我们程序中重复调用的通用程序（例如 打印消息，向文件写入，等），通常通过某种方式改变传递给函数的参数来改变输出的结果。在CPU层面，函数仅仅是向有用程序的地址的跳转然后在函数结束后跳回原来跳转指令紧接的下一条指令的地址。
+
+我们可以这样模拟函数调用：
+```nasm
+...
+...
+mov al, ’H’                 ; Store ’H’ in al so our function will print it.
+
+jmp my_print_function       
+return_to_here:             ;This label is our life-line so we can get back.
+...
+...
+
+my_print_function:          
+mov ah, 0x0e                ;int=10/ah=0x0e -> BIOS tele-type output 
+int 0x10                    ;print the character in al
+jmp return_to_here          ;return from the function call.
+
+```
+
+首先，注意我们怎么将 `al` 寄存器作为参数, 这里通过提前设置它然后供函数使用。
+这就是使高级语言实现参数传递成为可能的方式，调用方和被调用方必须就将要传递参数的位置和数量达成一致。
+
+遗憾的是，这种方法的主要缺陷是我们需要明确指出在调用函数后返回到哪里，所以我们不可能从我们程序的任何地方调用这个函数，因为它始终返回到相同的地址，这里就是 return_to_here 标签的地址。
+
+借用参数传递的主意，调用者代码可以保存正确的返回地址（即 调用后紧接的地址）到一些大家都知道的位置，然后被调用的代码可以跳转到事先保存的地址。CPU在特殊寄存器ip（指令指针）中跟踪当前正在执行的指令，但是遗憾的是我们不能直接访问ip寄存器，但是CPU给我们提供了一堆指令，`call` 和 `ret`, 通过这两个指令我们能实现我们所希望的跳转和返回：`call` 指令的行为与 `jmp` 指令一样，不过它回在实际跳转之前将返回的地址push 到 栈；`re`t 指令能从栈 `pop` 下返回的地址然后跳转过去，如下：
+```nasm
+...
+...
+mov al, ’H’                 ; Store ’H’ in al so our function will print it.
+
+call my_print_function       
+...
+...
+
+my_print_function:          
+mov ah, 0x0e                ;int=10/ah=0x0e -> BIOS tele-type output 
+int 0x10                    ;print the character in al
+ret
+```
+我们的函数现在几乎是独立的了。
