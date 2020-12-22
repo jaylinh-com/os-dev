@@ -158,13 +158,310 @@ b4 0e b0 48 cd 10 b0 65 cd 10 b0 6c cd 10 b0 6c cd 10 b0 6f cd 10 e9 fd ff 00 00
 为了完整性， 图表3.3 显示了这个引导扇区的原始机器代码。这是精确的告诉CPU做什么的实际字节。如果您对编写这样一个几乎毫无用处的程序所涉及的大量工作和理解感到惊讶，那么请记住，这些指令非常紧密地映射到CPU的电路，因此它们一定很简单 ，但速度也很快。 您现在已经真正了解了您的计算机。
 
 ## 3.4 Hello World!
-现在我们将尝试一个比hello程序稍微高级一点的版本。这个版本将引入跟多的CPU基础知识并了解引导扇区被BIOS占用的内存环境的。
+现在我们将尝试一个比hello程序稍微高级一点的版本。这个版本将引入更多的CPU基础知识并了解我们的引导扇区被BIOS装载到的内存环境。
 
 ### 3.4.1 内存，地址，和标签 （Memory, Addresses, Labels）
-我们之前说过CPU怎么从内存中取指执行的，以及BIOS怎么加载我们的512字节的引导扇区到内存中并初始化然后告诉CPU跳转到我们代码的开始处，从这里开始执行一条指令，然后下一条，下一条，等等。
+我们之前介绍过CPU怎么从内存中取指执行，以及BIOS怎么加载我们的512字节的引导扇区到内存中并完成初始化，然后告诉CPU跳转到我们代码的开始处，并从这里开始执行一条指令，然后下一条，下一条，等等。
 
-所以我们的引导扇区是内存中的某个地方，但是在哪里呢？我们可以把主存想象成通过地址独立访问的字节长序列，所以如果想知道第54个字节的内容，54就是我们的它的地址，通常使用16进制的格式将地址表示为0x36更方便。
+所以我们的引导扇区存在于内存中的某个地方，但是在哪里呢？我们可以把主存想象成能通过地址独立访问的长字节序列，所以如果想知道第54个字节的内容，54就是我们的它的地址，通常使用16进制的格式将地址表示为0x36更方便。
+
+所以引导扇区最开始处即第一个机器代码字节在内存的某个地方，并且是BIOS将它们置于这个地方的。直到我们了解事实之前，我们可以先假设BIOS将我们的代码加载到内存的最开始处，即在地址0x0处。不过，这显然没有这么简单，因为我们知道在BIOS在加载我们的代码之前BIOS自己已经完成了初始化工作，并持续提供例如时钟中断和磁盘驱动等服务,所以BIOS服务（例如 ISRs， 打印输出到显示器服务，等等）自己本身也要存放到内存的某处，并且在使用这些服务期间，维持在内存中（不被别的代码覆盖）。还有，我们之前已经知道了，中断向量表存放在内存的开始处，如果BIOS 将我们的代码加载到这里，我们的代码将覆盖中断向量表，，因为中断序号于 ISR 之间的映射关系已经规定好了，当下一个中断出现时，计算机将会执行错误的中断服务，并导致崩溃并重启。
+
+经过证明，BIOS 通常将引导扇区加载到0x7c00地址处，使用这个起始地址将保证代码不会覆盖其他重要的服务。图表3.4展示了当引导扇区刚被加载时计算机内典型的内存分布。所以，我们可能会命令CPU向内存中的任何地址写数据，这会导致发生严重的问题。因为内存中已经存放了一些其他的重要的服务例如时间中断和磁盘驱动。
+
+<img :src="$withBase('/images/f3_4.png')" alt="典型的启动后内存分布">
+
+>图表3.4: 典型的启动后内存分布
+### 3.4.2 'X' 标记位置
+现在我们将玩一个"找字节"的游戏，这个游戏将介绍内存引用，汇编语言中标签的使用，以及知道BIOS将我们的代码加载到哪里的重要性。我们将编写一个汇编程序，实现保存一个字符的字节数据，然后将这个字符打印到显示器上。为了完成这个程序，我们需要计算出它的绝对内存地址，然后我们就可以它加载到al寄存器中最后让BIOS打印输出它，如下练习：
+```nasm
+;
+; A simple boot sector program that demonstrates addressing. 
+;
+
+mov ah, 0x0e              ; int 10/ah = 0eh -> scrolling teletype BIOS routine
+
+; First attempt 
+mov al, the_secret 
+int 0x10                   ; Does this print an X?
+
+; Second attempt
+mov al, [the_secret] 
+int 0x10                    ; Does this print an X?
+
+; Third attempt 
+mov bx, the_secret 
+add bx, 0x7c00
+mov al, [bx]
+int 0x10                    ; Does this print an X?
+
+; Fourth attempt
+mov al, [0x7c1e]
+int 0x10                    ; Does this print an X?
+
+jmp $                       ; Jump forever. 
+
+the_secret:
+db "X"
+
+; Padding and magic BIOS number.
+times 510-($-$$) db 0 
+dw 0xaa55
+
+```
+
+首先，当我们在程序中声明一些数据时，我们在它前面加上一个标签(the_secret).我们可以将标签放置到程序的任何位置，使用它们的唯一目的是为我们提供从代码开始到特定指令或数据的方便的偏移量。
+
+```
+b4 0e b0 1e cd 10 a0 1e 00 cd 10 bb 1e 00 81 c3 00 7c 8a 07 cd 10 a0 1e 7c cd 10 e9 fd ff 58 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+*
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 55 aa
+```
+>图表3.5:
+
+如果我们直接看图表3.5中的汇编后的机器代码，我们可以找到我们的'X'字符, 它的16进制ASCII码为0x58，它相较于代码的起始位置的偏移量为30(0x1e), 直接位于我们开始在引导扇区填充0的位置之前;
+
+如果我们运行这个程序，我们会看到只有后两次尝试打印成功。
+
+第一次尝试失败的问题是它试图将直接偏移量加载到al作为字符来打印。但是实际上我们需要打印的是在这个偏移量位置的字符，而不是偏移量本身。如后面一条尝试的例子，通过在偏移量外面加上方括号，可以命令CPU做正确的事情-保存一个地址中的内容。
+
+那为什么第二个尝试失败了呢？它的问题是CPU将偏移量当作以从内存开始处的偏移。而不是从我们的代码加载的地方开始的偏移。这将导致这个偏移量指向到中断向量表上。在第三个尝试中，我们使用CPU add指令给 the_secret 偏移量加上了0x7c00地址，我们相信BIOS将我们的代码加载到0x7c00地址处。我们可以把 add 指令看作高级语言表达式 `bx = bx + 0x7c00`。我们现在计算出了'X'在内存中正确的地址，接着可以使用指令 `mov al, [bx]`将这个地址的内容存放到al寄存器中，为BIOS打印函数做准备
+
+在第四个尝试中，我们试着跟聪明一些，在引导扇区被BIOS装载入内存后提前计算‘X’ 的地址。我通过提前检查二进制代码找到了地址0x7c12(查看 图表3.5)，在图表中显示，‘X’相对于我们的启动扇区的开始位置偏移0x1e(30)个字节。最后一个尝试提醒了我们为什么标签如此有用。因为如果没有标签我们将从编译后的代码中计算偏移量。如果代码的变更改变了偏移量改变，我们还需要更新偏移量。
+
+这里我们看到了BIOS确实将我们的引导扇区加载到了0x7c00地址处。并且我们也看到了汇编代码中的标签与寻址的关系。
+
+在代码中频繁的计算这种标签与内存的偏移很不方便。所以很多汇编程序在汇编期间纠正标签引用，如果你在你的代码的开始处包含以下指令明确告诉汇编程序你期望的代码在内存中的地址:
+```
+[org 0x7c00]
+```
+
+#### 问题1
+当这个 org 指令添加到了这个引导扇区程序上，你觉得程序将会有怎样的打印结果？ 为了获得好成绩，请解释为什么会这样。
+
+### 3.4.3 定义字符串
+假设您想在某个时候打印一条预定义的消息（例如“引导操作系统”）到屏幕上；你会在汇编程序中如何定义这个字符串？我们得提醒自己计算机对字符串一无所知，字符串只是存储在内存某处的数据单元系列（例如字节、单词等）。
+
+在汇编中我们可以像下面这样定义字符串：
+```
+my_string:
+db ’Booting OS’
+```
+我们已经见过了 db 指令，可以翻译为“declare byte(s) of data”,这个指令告诉汇编程序将后面的字节直接写入到二进制输出文件中（即不要将他们翻译为处理器指令）。因为我们使用引号包裹数据，这样汇编程序就知道将其中的每个字符转换成ASCII字节码。注意，我们通常使用标签（例如：my_string）来标记数据的开始，否则我们没有其他容易的方法用来在我们的代码中引用数据。
+
+在这个例子中，我们忽略了一件事：知道一个字符串有多长和知道它在哪里一样重要。毕竟所有处理字符串的代码是由我们编写的，所以有一个一致的策略来了解字符串的长度是很重要的。有几种可能，但惯例是将字符串声明为以null结尾，这意味着我们总是将字符串的最后一个字节声明为0，如下所示：
+```
+my_string:
+db ’Booting OS’,0
+```
+
+当需要遍历一个字符串时，可能是轮流打印它的每一个字符，我们可以容易的知道什么时候遍历结束了。
+
+### 2.4.4 使用栈
+当提及底层计算的话题，我们经常听到大家谈论栈就像它是一种特殊的东西。栈其实是这些的问题的简单解决方案而已：CPU提供临时存储我们的程序的局部变量的寄存器的数量是有限的，但是我们通常需要比寄存器更多的临时储存。这时，显然我们可以使用主存，但是当读取或者写入时指明具体的内存地址很不方便，特别是当我们无需关心数据到底存放到哪里，只要我们能够容易的获取数据就够了。并且，我们将在后面看到，栈对于传递参数以实现函数调用也很有用。
+
+所以，CPU提供了 `push` 和 `pop` 2条指令，分别用于重栈顶储存值和取出值，这样就不需要关心他们到底存放到哪里。注意，然而我们不能push 或者 pop 单个字节到栈上：在16位模式下，栈只能在16位长度下工作。
 
 
+栈是通过 `bp` 和 `sp` 这两个特殊的CPU 寄存器实现的，它们分别维护栈基（即栈底）和栈顶的地址。随着我们不断的将数据压栈，栈将越来也大。 所以为了当栈生长的很大时没有覆盖重要程序（例如BIOS代码或我们的代码）的危险，我们通常将栈基设置在离这些重要程序很远的地方。堆栈的一个令人困惑的地方是它实际上是从基指针向下增长的，所以当我们发出一个push时，值实际上存储在bp地址的下面，而不是上面，而sp则按值的大小递减。
+
+下面 图表3.6中的引导扇区程序展示了栈的使用。
+
+```nasm
+;
+; A simple boot sector program that demonstrates the stack. 
+;
+
+mov ah, 0x0e                ; int 10/ah = 0eh -> scrolling teletype BIOS routine
+mov bp, 0x8000              ; Set the base of the stack a little above where BIOS 
+mov sp, bp                  ; loads our boot sector - so it won’t overwrite us
+
+push ’A’                    ; Push some characters on the stack for later 
+push ’B’                    ; retreival. Note, these are pushed on as
+push ’C’                    ; 16-bit values, so the most significant byte 
+                            ; will be added by our assembler as 0x00.
+
+pop bx                      ; Note, we can only pop 16-bits, so pop to bx
+mov al, bl                  ; then copy bl (i.e. 8-bit char) to al
+int 0x10                    ; print(al)
+
+pop bx                      ; Pop the next value 
+mov al, bl                  
+int 0x10                    ; print(al) 
+
+mov al, [0x7ffe]            ; To prove our stack grows downwards from bp,
+                            ; fetch the char at 0x8000 - 0x2 (i.e. 16-bits) 
+int 0x10                    ; print(al)
+
+jmp $                       ; Jump forever.
 
 
+; Padding and magic BIOS number.
+times 510-($-$$) db 0 
+dw 0xaa55
+
+```
+>图表3.6： 使用 `push` 与 `pop` 操作栈
+
+#### 问题2
+图表3.6中的代码将以什么顺序打印什么？ 字符‘C’的ASCII码存放在内存中的绝对地址是什么？为了验证你的想法，你会发现尝试修改代码将有帮助。但是需要确认为什么在这个地址。
+
+> 译者给出的测试代码
+```nasm
+;
+; A simple boot sector program that demonstrates the stack. 
+;
+
+mov ah, 0x0e                ; int 10/ah = 0eh -> scrolling teletype BIOS routine
+mov bp, 0x8000              ; Set the base of the stack a little above where BIOS 
+mov sp, bp                  ; loads our boot sector - so it won’t overwrite us
+
+push ’A’                    ; Push some characters on the stack for later 
+push ’B’                    ; retreival. Note, these are pushed on as
+push ’C’                    ; 16-bit values, so the most significant byte 
+                            ; will be added by our assembler as 0x00.
+
+mov bx, 0x8000              ; 将bx 设置为 bp 的值
+
+sub bx, 0x2                 ; 减去 16 位 即 A 的地址保存到bx
+mov al, [bx]                ; 将bx存的地址的内容放到al中
+int 0x10                    ; 打印
+
+sub bx, 0x2                 ; 同上打印B
+mov al, [bx]
+int 0x10
+
+sub bx, 0x2                 ; 同上打印C
+mov al, [bx]
+int 0x10
+   
+
+pop bx                      ; Note, we can only pop 16-bits, so pop to bx
+mov al, bl                  ; then copy bl (i.e. 8-bit char) to al
+int 0x10                    ; print(al)
+
+pop bx                      ; Pop the next value 
+mov al, bl                  
+int 0x10                    ; print(al) 
+
+mov al, [0x7ffe]            ; To prove our stack grows downwards from bp,
+                            ; fetch the char at 0x8000 - 0x2 (i.e. 16-bits) 
+int 0x10                    ; print(al)
+
+jmp $                       ; Jump forever.
+
+
+; Padding and magic BIOS number.
+times 510-($-$$) db 0 
+dw 0xaa55
+
+```
+
+### 3.4.5 控制结构
+当我们使用一门编程语言时，如果不清楚怎么编写一些它的基础控制结构（例如 if..then..elseif..else, for, 和 while.）我们将会不适应这门语言。这些结构运行代码执行可选的分支，是组成有用的程序的基础。
+
+在编译后，这些高级控制结构简化为简单的跳转（jump）语句。实际上，我们已经见过最简单的循环事例了：
+
+```nasm
+some_label:
+jmp some_label ; jump to address of label
+```
+
+或者，另一种方式，具有相同效果：
+```nasm
+jmp $ ; jump to address of current instruction
+```
+
+这个指令给我们提供了无条件跳转（即它一直跳转）的能力；但是我们通常需要基于某些条件跳转（例如一直循环知道我们循环了10次，等）。
+
+在汇编语言中通过先执行一个比较指令，然后执行一个特定的条件跳转指令来实现条件跳转。
+```nasm
+cmp ax, 4               ; compare the value in ax to 4  将ax 中的值与4 比较
+je then_block           ; jump to then_block if they were equal  如果结果相等则跳转到 then_block
+mov bx , 45             ; otherwise , execute this code    否则执行这条代码
+jmp the_end             ; important: jump over the ’then’ block,  重要：跳过 then 代码块，
+                        ; so we don’t also execute that code.      这样我们就不会也执行 then 代码块中的内容
+then_block: 
+mov bx , 23
+
+the_end:
+
+```
+在类似C或者Java的语言里，上面的代码有这样的形式：
+```C
+if(ax == 4) { 
+    bx = 23;
+} else { 
+    bx = 45;
+}
+```
+
+我们可以从汇编事例中看到，在幕后发生了一些事情，它将cmp指令与其执行的je指令相关联起来。这是一个事例关于CPU的特殊标记寄存器捕获cmp 指令的结果，然后接下来的条件跳转指令能够通过它来决定是否跳转到特定的地址。
+
+基于之前的 `cmp x， y` 指令, 有以下的跳转指令可供使用：
+```nasm
+je target ; jump if equal
+jne target ; jump if not equal
+jl target ; jump if less than
+jle target ; jump if less than or equal
+jg target ; jump if greater than
+jge target ; jump if greater than or equal
+
+```
+
+#### 问题3
+从更高级的语言层面来规划条件代码，然后用汇编指令替换它总是很有用的。使用 `cmp` 及 合适的跳转指令将下面的伪汇编代码转换为完整的汇编代码。使用不同的 `bx` 来测试，并用你自己的语言来充分注释你的代码。
+```
+mov bx , 30
+if (bx <= 4) { 
+    mov al, ’A’
+} else if (bx < 40) { 
+    mov al, ’B’
+} else {
+    mov al, ’C’
+}
+
+mov ah, 0x0e            ; int=10/ah=0x0e -> BIOS tele-type output
+int 0x10                ; print the character in al
+jmp $
+
+;Padding and magic number. 
+times 510-($-$$) db 0
+dw 0xaa55
+```
+
+>译者给出的答案
+```nasm
+mov bx, 30
+
+cmp bx, 4        ; 比较bx 与 4
+jle mva          ; 如果 bx <= 4 跳转到 mva 地址处
+cmp bx, 40       ; 否则 比较 bx 与 40 
+jl mvb           ; 如果bx 小与 40 跳转到 mvb 地址处
+jmp mvc          ; 否则 跳转到 mvc 地址处
+
+
+mva:              
+mov al, 'A'      ; 将 'A' 赋给 al
+jmp end          ; 跳转到 end 地址处
+
+mvb:
+mov al, 'B'      ; 将 'A' 赋给 al  
+jmp end          ; 跳转到 end 地址处
+
+mvc:
+mov al, 'C'      ; 将 'A' 赋给 al
+
+end:
+
+mov ah, 0x0e     ; 将0x0e赋给ah
+int 0x10         ; 调用0x10号中断
+
+jmp $
+
+times 510-($-$$) db 0
+dw 0xaa55
+
+```
+
+### 3.4.6 调用函数
