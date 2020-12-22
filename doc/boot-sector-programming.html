@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     
-    <link rel="preload" href="/os-dev/assets/css/0.styles.f631a23c.css" as="style"><link rel="preload" href="/os-dev/assets/js/app.dfecc714.js" as="script"><link rel="preload" href="/os-dev/assets/js/2.0c2d34ad.js" as="script"><link rel="preload" href="/os-dev/assets/js/11.50025432.js" as="script"><link rel="prefetch" href="/os-dev/assets/js/10.e27cce2f.js"><link rel="prefetch" href="/os-dev/assets/js/12.0fd31076.js"><link rel="prefetch" href="/os-dev/assets/js/13.72b59380.js"><link rel="prefetch" href="/os-dev/assets/js/14.7191f0bb.js"><link rel="prefetch" href="/os-dev/assets/js/15.2435b32a.js"><link rel="prefetch" href="/os-dev/assets/js/16.a68b38a0.js"><link rel="prefetch" href="/os-dev/assets/js/17.ea94724d.js"><link rel="prefetch" href="/os-dev/assets/js/18.e797f3d8.js"><link rel="prefetch" href="/os-dev/assets/js/19.c1e47845.js"><link rel="prefetch" href="/os-dev/assets/js/20.0bb9ad2c.js"><link rel="prefetch" href="/os-dev/assets/js/3.03d08e27.js"><link rel="prefetch" href="/os-dev/assets/js/4.880e7f6b.js"><link rel="prefetch" href="/os-dev/assets/js/5.31ed563c.js"><link rel="prefetch" href="/os-dev/assets/js/6.73c063ed.js"><link rel="prefetch" href="/os-dev/assets/js/7.294a7cdc.js"><link rel="prefetch" href="/os-dev/assets/js/8.5993cf55.js"><link rel="prefetch" href="/os-dev/assets/js/9.3112df6c.js">
+    <link rel="preload" href="/os-dev/assets/css/0.styles.f631a23c.css" as="style"><link rel="preload" href="/os-dev/assets/js/app.0105d520.js" as="script"><link rel="preload" href="/os-dev/assets/js/2.0c2d34ad.js" as="script"><link rel="preload" href="/os-dev/assets/js/11.ca8fac39.js" as="script"><link rel="prefetch" href="/os-dev/assets/js/10.e27cce2f.js"><link rel="prefetch" href="/os-dev/assets/js/12.0fd31076.js"><link rel="prefetch" href="/os-dev/assets/js/13.72b59380.js"><link rel="prefetch" href="/os-dev/assets/js/14.7191f0bb.js"><link rel="prefetch" href="/os-dev/assets/js/15.2435b32a.js"><link rel="prefetch" href="/os-dev/assets/js/16.a68b38a0.js"><link rel="prefetch" href="/os-dev/assets/js/17.ea94724d.js"><link rel="prefetch" href="/os-dev/assets/js/18.e797f3d8.js"><link rel="prefetch" href="/os-dev/assets/js/19.36becad2.js"><link rel="prefetch" href="/os-dev/assets/js/20.86001fa1.js"><link rel="prefetch" href="/os-dev/assets/js/3.03d08e27.js"><link rel="prefetch" href="/os-dev/assets/js/4.880e7f6b.js"><link rel="prefetch" href="/os-dev/assets/js/5.31ed563c.js"><link rel="prefetch" href="/os-dev/assets/js/6.73c063ed.js"><link rel="prefetch" href="/os-dev/assets/js/7.294a7cdc.js"><link rel="prefetch" href="/os-dev/assets/js/8.5993cf55.js"><link rel="prefetch" href="/os-dev/assets/js/9.3112df6c.js">
     <link rel="stylesheet" href="/os-dev/assets/css/0.styles.f631a23c.css">
   </head>
   <body>
@@ -288,11 +288,38 @@ jmp <span class="token operator">$</span>
 times <span class="token number">510</span><span class="token operator">-</span>(<span class="token operator">$</span><span class="token operator">-</span><span class="token operator">$</span><span class="token operator">$</span>) db <span class="token number">0</span>
 dw <span class="token number">0xaa55</span>
 
-</code></pre></div><h3 id="_3-4-6-调用函数"><a href="#_3-4-6-调用函数" class="header-anchor">#</a> 3.4.6 调用函数</h3></div> <footer class="page-edit"><!----> <div class="last-updated"><span class="prefix">最近更新:</span> <span class="time">2020/12/22 上午10:01:56</span></div></footer> <div class="page-nav"><p class="inner"><span class="prev">
+</code></pre></div><h3 id="_3-4-6-调用函数"><a href="#_3-4-6-调用函数" class="header-anchor">#</a> 3.4.6 调用函数</h3> <p>在高级语言中，我们将较大的问题分解为函数，本质上函数就是我们程序中重复调用的通用程序（例如 打印消息，向文件写入，等），通常通过某种方式改变传递给函数的参数来改变输出的结果。在CPU层面，函数仅仅是向有用程序的地址的跳转然后在函数结束后跳回原来跳转指令紧接的下一条指令的地址。</p> <p>我们可以这样模拟函数调用：</p> <div class="language-nasm extra-class"><pre class="language-nasm"><code>...
+...
+mov <span class="token register variable">al</span>, ’H’                 <span class="token comment">; Store ’H’ in al so our function will print it.</span>
+
+jmp my_print_function       
+<span class="token label function">return_to_here:</span>             <span class="token comment">;This label is our life-line so we can get back.</span>
+...
+...
+
+<span class="token label function">my_print_function:</span>          
+mov <span class="token register variable">ah</span>, <span class="token number">0x0e</span>                <span class="token comment">;int=10/ah=0x0e -&gt; BIOS tele-type output </span>
+int <span class="token number">0x10</span>                    <span class="token comment">;print the character in al</span>
+jmp return_to_here          <span class="token comment">;return from the function call.</span>
+
+</code></pre></div><p>首先，注意我们怎么将 <code>al</code> 寄存器作为参数, 这里通过提前设置它然后供函数使用。
+这就是使高级语言实现参数传递成为可能的方式，调用方和被调用方必须就将要传递参数的位置和数量达成一致。</p> <p>遗憾的是，这种方法的主要缺陷是我们需要明确指出在调用函数后返回到哪里，所以我们不可能从我们程序的任何地方调用这个函数，因为它始终返回到相同的地址，这里就是 return_to_here 标签的地址。</p> <p>借用参数传递的主意，调用者代码可以保存正确的返回地址（即 调用后紧接的地址）到一些大家都知道的位置，然后被调用的代码可以跳转到事先保存的地址。CPU在特殊寄存器ip（指令指针）中跟踪当前正在执行的指令，但是遗憾的是我们不能直接访问ip寄存器，但是CPU给我们提供了一堆指令，<code>call</code> 和 <code>ret</code>, 通过这两个指令我们能实现我们所希望的跳转和返回：<code>call</code> 指令的行为与 <code>jmp</code> 指令一样，不过它回在实际跳转之前将返回的地址push 到 栈；<code>re</code>t 指令能从栈 <code>pop</code> 下返回的地址然后跳转过去，如下：</p> <div class="language-nasm extra-class"><pre class="language-nasm"><code>...
+...
+mov <span class="token register variable">al</span>, ’H’                 <span class="token comment">; Store ’H’ in al so our function will print it.</span>
+
+call my_print_function       
+...
+...
+
+<span class="token label function">my_print_function:</span>          
+mov <span class="token register variable">ah</span>, <span class="token number">0x0e</span>                <span class="token comment">;int=10/ah=0x0e -&gt; BIOS tele-type output </span>
+int <span class="token number">0x10</span>                    <span class="token comment">;print the character in al</span>
+ret
+</code></pre></div><p>我们的函数现在几乎是独立的了。</p></div> <footer class="page-edit"><!----> <div class="last-updated"><span class="prefix">最近更新:</span> <span class="time">2020/12/22 上午10:39:26</span></div></footer> <div class="page-nav"><p class="inner"><span class="prev">
       ←
       <a href="/os-dev/doc/computer-architecture-and-the-boot-process.html" class="prev">
         2. 计算机体系结构与引导流程
       </a></span> <!----></p></div> </main></div><div class="global-ui"></div></div>
-    <script src="/os-dev/assets/js/app.dfecc714.js" defer></script><script src="/os-dev/assets/js/2.0c2d34ad.js" defer></script><script src="/os-dev/assets/js/11.50025432.js" defer></script>
+    <script src="/os-dev/assets/js/app.0105d520.js" defer></script><script src="/os-dev/assets/js/2.0c2d34ad.js" defer></script><script src="/os-dev/assets/js/11.ca8fac39.js" defer></script>
   </body>
 </html>
