@@ -411,7 +411,7 @@ jge target ; jump if greater than or equal
 
 #### 问题3
 从更高级的语言层面来规划条件代码，然后用汇编指令替换它总是很有用的。使用 `cmp` 及 合适的跳转指令将下面的伪汇编代码转换为完整的汇编代码。使用不同的 `bx` 来测试，并用你自己的语言来充分注释你的代码。
-```
+```nasm
 mov bx , 30
 if (bx <= 4) { 
     mov al, ’A’
@@ -505,4 +505,112 @@ mov ah, 0x0e                ;int=10/ah=0x0e -> BIOS tele-type output
 int 0x10                    ;print the character in al
 ret
 ```
-我们的函数现在几乎是独立的了。
+我们的函数现在几乎是独立的了。但是这里还有一个问题，如果我们现在解决它，后面我们会庆幸自己的决定。这个问题是当我们在程序内调用一个函数，例如打印函数，在内部这个函数可能会修改若干寄存器来完成自己的工作（实际上，由于寄存器是稀缺的资源，所以它肯定会修改的），所以当我们的程序从函数返回后它可能并不能安全的继续工作，例如，保证我们存到dx 中的值仍然不变。
+
+因此，对于一个函数立即将它将要修改的寄存器中的值推到栈上然后在返回之前将它们从栈上弹出（重置寄存器为原始值）是明智的，因为一个函数可能会使用很多通用寄存器。CPU 实现了2个方便的指令-`pusha` 和 `popa` ,这2个命令能方便的将所有的寄存器的值压栈或者出栈，例如：
+```nasm
+...
+...
+some_function:
+pusha               ; Push all register values to the stack
+mov bx, 10 
+add bx, 20 
+mov ah, 0x0e        ; int=10/ah=0x0e -> BIOS tele-type output
+int 0x10            ; print the character in al
+popa                ; Restore original register values
+ret
+
+```
+
+### 3.4.7 包含文件
+在辛苦的完成了看起来非常简单的汇编程序后，你可能想在多个程序中复用你的代码，`nasm` 允许你想下面这样直接包含外部文件:
+```nasm
+%include "my_print_function.asm"    ; this will simply get replaced by 
+                                    ; the contents of the file
+...
+mov al, ’H’                         ; Store ’H’ in al so our function will print it. 
+call my_print_function
+```
+
+
+### 3.4.8 结合起来
+我们现在已经有足够的对CPU和汇编的知识，来完成一个稍微复杂一点的“Hello Wrold”引导扇区程序。
+
+#### 问题4
+将本节中的所有思想放在一起，制作一个独立的函数，用于打印以空结尾的字符串，其用法如下：
+
+```nasm
+;
+; A boot sector that prints a string using our function.
+;
+
+[org 0x7c00]            ; Tell the assembler where this code will be loaded
+mov bx, HELLO_MSG       ; Use BX as a parameter to our function, so
+call print_string       ; we can specify the address of a string.
+
+mov bx, GOODBYE_MSG     
+call print_string
+
+jmp $                   ; Hang
+
+%include "print_string.asm"
+
+; Data
+HELLO_MSG:
+db ’Hello, World!’, 0   ; <-- The zero on the end tells our routine
+                        ; when to stop printing characters.
+GOODBYE_MSG:
+db ’Goodbye!’, 0
+
+; Padding and magic number. 
+times 510-($-$$) db 0
+dw 0xaa55
+```
+
+为了获得好的分数，请确保函数在修改寄存器时非常小心，并且您对代码进行了充分的注释以展示你的理解。
+
+### 3.4.8 总结
+现在，我们仍会觉得没有向前走多远，对于我们现在正在工作的原始环境来说这没问题，很正常。如果我们将之前学习的都弄清楚了，我们就在前进的路上了。
+
+## 3.5 护士, 把我的停诊器拿给我
+目前为止，我们已经设法使计算机将我们加载到内存中的字符和字符串打印出来。但是很快我们将尝试从磁盘中加载一些数据，所以如果我们能将储存在内存上任何地址中的16进制值打印出来将很有帮助，这能帮助我们确认我们是否真的成功加载了任何东西。记住，我们没有奢侈美好的开发GUI（图新用户界面），它带有调试器，帮助我们小心的调试和检查代码。并且当我们遇到错误时不需要做任何事就是计算机就直接显示出来错误的给我们良好的反馈，所以我们需要自给自足。
+
+我们已经编写了一个打印字符串的程序，这里我们将扩展这个程序来实现一个16进制打印程序 --- 一个在底层环境中需要被珍惜的程序。
+
+让我们仔细的想想我们应该怎么做，从思考我们怎么使用这个程序开始。在高级语言中，我们会需要这样的服务：`print_hex(0x1fb6)`， 这个服务将这个16进制数转化成 ‘0x1fb6’字符串 然后打印到显示器上。我们在3.4.6节中已经学过怎么在汇编语言中调用函数以及使用寄存器做为函数的参数，这里让我们使用 `dx` 寄存器作为参数用来保存我们希望 `print_hex` 函数打印的值：
+```nasm
+mov dx, 0x1fb6      ; store the value to print in dx  
+call print_hex      ; call the function
+
+; prints the value of DX as hex.
+print_hex: 
+...
+...
+ret
+```
+
+由于我们需要打印字符串到显示器，我们也可以复用之前的打印函数来完成这里的打印部分功能，然后我们主要的任务就是怎么使用我们的参数 `dx` 中的值来构造一个字符串就行了。当使用汇编工作时我们肯定不希望把事情弄复杂，所以我们使用下面的技巧来开始我们的函数。如果我们将完整的16进制字符串定义为程序中的一种模版变量，就像我们之前定义 “Hello, World” 消息一样，我们可以就可以使用字符串打印函数来打印它，然后我们的`print_hex` 程序的任务就是修改这个字符串模版来使用ASCII码反映16进制的值。
+
+```nasm
+mov dx, 0x1fb6          ; store the value to print in dx 
+call print_hex          ; call the function
+
+; prints the value of DX as hex.
+print_hex:
+; TODO: manipulate chars at HEX_OUT to reflect DX
+
+mov bx, HEX_OUT         ; print the string pointed to 
+call print_string       ; by BX
+ret
+
+; global variables 
+HEX_OUT: db ’0x0000’,0
+```
+
+### 3.5.1 问题5（高级）
+完成 `print_hex` 函数的实现。你会发现 `and` 和 `shr` 这两个 CPU 指令很有用，你可以从互联网上找到这2个命令的使用信息。确保使用你自己的语言来注释并充分解释你的代码。
+
+## 3.6 读取磁盘
+
+
+### 3.6.1 通过 Segments 来扩展内存访问
