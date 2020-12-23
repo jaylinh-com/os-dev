@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     
-    <link rel="preload" href="/os-dev/assets/css/0.styles.f631a23c.css" as="style"><link rel="preload" href="/os-dev/assets/js/app.e645df5d.js" as="script"><link rel="preload" href="/os-dev/assets/js/2.0c2d34ad.js" as="script"><link rel="preload" href="/os-dev/assets/js/11.6a490fb5.js" as="script"><link rel="prefetch" href="/os-dev/assets/js/10.e27cce2f.js"><link rel="prefetch" href="/os-dev/assets/js/12.0fd31076.js"><link rel="prefetch" href="/os-dev/assets/js/13.72b59380.js"><link rel="prefetch" href="/os-dev/assets/js/14.7191f0bb.js"><link rel="prefetch" href="/os-dev/assets/js/15.2435b32a.js"><link rel="prefetch" href="/os-dev/assets/js/16.a68b38a0.js"><link rel="prefetch" href="/os-dev/assets/js/17.ea94724d.js"><link rel="prefetch" href="/os-dev/assets/js/18.e797f3d8.js"><link rel="prefetch" href="/os-dev/assets/js/19.c1e47845.js"><link rel="prefetch" href="/os-dev/assets/js/20.0bb9ad2c.js"><link rel="prefetch" href="/os-dev/assets/js/3.03d08e27.js"><link rel="prefetch" href="/os-dev/assets/js/4.880e7f6b.js"><link rel="prefetch" href="/os-dev/assets/js/5.31ed563c.js"><link rel="prefetch" href="/os-dev/assets/js/6.73c063ed.js"><link rel="prefetch" href="/os-dev/assets/js/7.294a7cdc.js"><link rel="prefetch" href="/os-dev/assets/js/8.5993cf55.js"><link rel="prefetch" href="/os-dev/assets/js/9.3112df6c.js">
+    <link rel="preload" href="/os-dev/assets/css/0.styles.f631a23c.css" as="style"><link rel="preload" href="/os-dev/assets/js/app.bb176265.js" as="script"><link rel="preload" href="/os-dev/assets/js/2.0c2d34ad.js" as="script"><link rel="preload" href="/os-dev/assets/js/11.3babf7d3.js" as="script"><link rel="prefetch" href="/os-dev/assets/js/10.e27cce2f.js"><link rel="prefetch" href="/os-dev/assets/js/12.0fd31076.js"><link rel="prefetch" href="/os-dev/assets/js/13.72b59380.js"><link rel="prefetch" href="/os-dev/assets/js/14.7191f0bb.js"><link rel="prefetch" href="/os-dev/assets/js/15.2435b32a.js"><link rel="prefetch" href="/os-dev/assets/js/16.a68b38a0.js"><link rel="prefetch" href="/os-dev/assets/js/17.ea94724d.js"><link rel="prefetch" href="/os-dev/assets/js/18.e797f3d8.js"><link rel="prefetch" href="/os-dev/assets/js/19.c1e47845.js"><link rel="prefetch" href="/os-dev/assets/js/20.0bb9ad2c.js"><link rel="prefetch" href="/os-dev/assets/js/3.03d08e27.js"><link rel="prefetch" href="/os-dev/assets/js/4.880e7f6b.js"><link rel="prefetch" href="/os-dev/assets/js/5.31ed563c.js"><link rel="prefetch" href="/os-dev/assets/js/6.73c063ed.js"><link rel="prefetch" href="/os-dev/assets/js/7.294a7cdc.js"><link rel="prefetch" href="/os-dev/assets/js/8.5993cf55.js"><link rel="prefetch" href="/os-dev/assets/js/9.3112df6c.js">
     <link rel="stylesheet" href="/os-dev/assets/css/0.styles.f631a23c.css">
   </head>
   <body>
@@ -331,7 +331,7 @@ ret
 ...
 mov <span class="token register variable">al</span>, ’H’                         <span class="token comment">; Store ’H’ in al so our function will print it. </span>
 call my_print_function
-</code></pre></div><h3 id="_3-4-8-结合起来"><a href="#_3-4-8-结合起来" class="header-anchor">#</a> 3.4.8 结合起来</h3> <p>我们现在已经有足够的对CPU和汇编的知识，来完成一个稍微复杂一点的“Hello Wrold”引导扇区程序。</p> <h4 id="问题4"><a href="#问题4" class="header-anchor">#</a> 问题4</h4> <p>将本节中的所有思想放在一起，制作一个独立的函数，用于打印以空结尾的字符串，其用法如下：</p> <div class="language-nasm extra-class"><pre class="language-nasm"><code><span class="token comment">;</span>
+</code></pre></div><h3 id="_3-4-8-综合使用"><a href="#_3-4-8-综合使用" class="header-anchor">#</a> 3.4.8 综合使用</h3> <p>我们现在已经有足够的对CPU和汇编的知识，来完成一个稍微复杂一点的“Hello Wrold”引导扇区程序。</p> <h4 id="问题4"><a href="#问题4" class="header-anchor">#</a> 问题4</h4> <p>将本节中的所有思想放在一起，制作一个独立的函数，用于打印以空结尾的字符串，其用法如下：</p> <div class="language-nasm extra-class"><pre class="language-nasm"><code><span class="token comment">;</span>
 <span class="token comment">; A boot sector that prints a string using our function.</span>
 <span class="token comment">;</span>
 
@@ -377,11 +377,150 @@ ret
 
 <span class="token comment">; global variables </span>
 <span class="token label function">HEX_OUT:</span> db ’<span class="token number">0x0000</span>’,<span class="token number">0</span>
-</code></pre></div><h3 id="_3-5-1-问题5-高级"><a href="#_3-5-1-问题5-高级" class="header-anchor">#</a> 3.5.1 问题5（高级）</h3> <p>完成 <code>print_hex</code> 函数的实现。你会发现 <code>and</code> 和 <code>shr</code> 这两个 CPU 指令很有用，你可以从互联网上找到这2个命令的使用信息。确保使用你自己的语言来注释并充分解释你的代码。</p> <h2 id="_3-6-读取磁盘"><a href="#_3-6-读取磁盘" class="header-anchor">#</a> 3.6 读取磁盘</h2> <h3 id="_3-6-1-通过-segments-来扩展内存访问"><a href="#_3-6-1-通过-segments-来扩展内存访问" class="header-anchor">#</a> 3.6.1 通过 Segments 来扩展内存访问</h3></div> <footer class="page-edit"><!----> <div class="last-updated"><span class="prefix">最近更新:</span> <span class="time">2020/12/23 上午4:25:56</span></div></footer> <div class="page-nav"><p class="inner"><span class="prev">
+</code></pre></div><h3 id="_3-5-1-问题5-高级"><a href="#_3-5-1-问题5-高级" class="header-anchor">#</a> 3.5.1 问题5（高级）</h3> <p>完成 <code>print_hex</code> 函数的实现。你会发现 <code>and</code> 和 <code>shr</code> 这两个 CPU 指令很有用，你可以从互联网上找到这2个命令的使用信息。确保使用你自己的语言来注释并充分解释你的代码。</p> <h2 id="_3-6-读取磁盘"><a href="#_3-6-读取磁盘" class="header-anchor">#</a> 3.6 读取磁盘</h2> <p>我们已经介绍了BIOS，并且在计算机底层环境里编写了一些程序，但是在我们编写操作系统的路上还有一个小问题摆在我们面前：BIOS从磁盘的第一个扇区加载我们的引导代码，但是这是它加载的所有代码了，如果我们的的操作系统代码操作512字节怎么办呢？我猜一定会超过的。</p> <p>操作系统通常不会只占用一个扇区（512字节），所以它们需要做的第一件事就是从磁盘中将其他剩下的代码加载到内存中，然后开始执行这些代码。幸运的是，BIOS给我们提供了程序允许我们操作驱动上的数据。</p> <h3 id="_3-6-1-通过-segments-来扩展内存访问"><a href="#_3-6-1-通过-segments-来扩展内存访问" class="header-anchor">#</a> 3.6.1 通过 Segments 来扩展内存访问</h3> <p>当CPU 运行在最初的16位实模式下，寄存器的大小最大为16位，这意味着指令能引用的最大的地址位0xffff，用今天的标准它只相当于区区64 KB（65536字节）。可能现在我们想要的简单操作系统不受这个限制的影响，但是对于一个现代的操作系统来说这个狭窄的盒子就太小了，所以了解这个问题的解决方案-分割很重要。</p> <p>为了解决这个限制，CPU 的设计者们增加了一些特殊的寄存器 <code>cs</code>， <code>ds</code>， <code>ss</code>， 和 <code>es</code> 统称为段寄存器。我们可以将主存想象为被切割的很多片段，这些片段通过段寄存器索引，这样当我们指定一个16为的地址，CPU通过使用合适的段的起始地址加上我们指定的地址的偏移量来自动计算出绝对地址. 我的意思是储备明确的指定否则使用合适的段，CPU 会根据我们的指令的上下文选择合适的段寄存器来偏移我们的地址，例如：<code>mov ax，[0x45ef]</code> 指令中使用的地址将默认从 数据段(data segment) 偏移，使用ds索引；类似的还有 栈段(stack segment)ss 用来修改栈基指针 bp 的实际地址。</p> <p>关于段寻址最让人困惑的是相邻的段对于16字节几乎完全重叠。所以不同的段和偏移量的组合能实际上指向同一个物理地址；现在说到这里就够了：我们在看一些例子之前很难真的掌握这些概念。</p> <p>为了计算绝对地址 CPU 将段寄存器中的地址乘以16然后加上你的偏移地址；因为我们使用的是16进制，当我们需要乘以16时只需要简单的将值左移一位就行了(例如 0x42 * 16 = 0x420). 所以如果我们将ds 设置为 0x4d 然后执行 <code>mov ax, [0x20]</code>, <code>ax</code> 中值的实际上将从地址0x4d0处加载
+（16 * 0x4d + 0x20）.</p> <div class="language-nasm extra-class"><pre class="language-nasm"><code><span class="token comment">;</span>
+<span class="token comment">; A simple boot sector program that demonstrates segment offsetting </span>
+<span class="token comment">;</span>
+
+mov <span class="token register variable">ah</span>, <span class="token number">0x0e</span>                    <span class="token comment">;int 10/ah = 0eh -&gt; scrolling teletype BIOS routine</span>
+
+mov <span class="token register variable">al</span>, <span class="token operator">[</span>the_secret<span class="token operator">]</span>
+int <span class="token number">0x10</span>                        <span class="token comment">; Does this print an X?</span>
+
+mov <span class="token register variable">bx</span>, <span class="token number">0x7c0</span>                   <span class="token comment">; Can’t set ds directly , so set bx</span>
+mov <span class="token register variable">ds</span>, <span class="token register variable">bx</span>                      <span class="token comment">; then copy bx to ds.</span>
+mov <span class="token register variable">al</span>, <span class="token operator">[</span>the_secret<span class="token operator">]</span>            
+int <span class="token number">0x10</span>                        <span class="token comment">; Does this print an X?</span>
+
+
+mov <span class="token register variable">al</span>, <span class="token operator">[</span><span class="token register variable">es</span>:the_secret<span class="token operator">]</span>         <span class="token comment">; Tell the CPU to use the es (not ds) segment.</span>
+int <span class="token number">0x10</span>                        <span class="token comment">; Does this print an X?</span>
+
+mov <span class="token register variable">bx</span>, <span class="token number">0x7c0</span>
+mov <span class="token register variable">es</span>, <span class="token register variable">bx</span>
+mov <span class="token register variable">al</span> <span class="token operator">[</span><span class="token register variable">es</span>:the_secret<span class="token operator">]</span>, 
+int <span class="token number">0x10</span>                        <span class="token comment">; Does this print an X?</span>
+
+jmp <span class="token operator">$</span>
+
+<span class="token label function">the_secret:</span>
+    db <span class="token string">&quot;X&quot;</span>
+
+<span class="token comment">; Padding and magic BIOS number. </span>
+times <span class="token number">510</span><span class="token operator">-</span>(<span class="token operator">$</span><span class="token operator">-</span><span class="token operator">$</span><span class="token operator">$</span>) db <span class="token number">0</span>
+dw <span class="token number">0xaa55</span>
+
+</code></pre></div><p>图表3.7展示了我们如何使用 <code>ds</code> 来实现类似第3.4.2节当时我们使用<code>[org 0x7c00]</code>来纠正标签寻址的问题。因为我们不实用 <code>org</code> 命令，当我们的代码被BIOS加载到地址0x7c00处，汇编程序就不会将标签偏移到正确的内存位置,所以第一次尝试打印一个'X'将会失败。但是如果我们将数据段寄存器为0x7c0后 CPU 将替我们执行这个偏移（0x7c0 * 16 + the_secret），所以第二次尝试会成功的打印'X'。在第三和第四次尝试中我们使用来相同的方式并得到相同的结果，但是这次我们明确的告诉CPU 在计算物理地址的时候使用通用寄存器es。</p> <p>注意这里显示的CPU电路的局限性（至少在16位实模式下），像 mov ds, 0x1234 这样看起来正确的指令其实是错误的。仅因为我们能将一个地址字面量直接存到通用寄存器中（例如 mov ax, 0x1234 或者 mov cx, 0xdf）,当这并不意味着我们能对任何类型的寄存器做这个操作，例如 段寄存器 等。像图表3.7中一样我们必须增加额外一步来通过通用寄存器来转化这个值。</p> <p>所以 基于段的寻址允许我们触达更远的内存空间，上升到大概 1MB（0xffff * 16 + 0xffff）.后面当我们切换到32为保护模式后，我们将看到怎么访问更多的地址，对于现阶段了解16位实模式下基于段的寻址就够了。</p> <h3 id="_3-6-2-磁盘驱动工作原理"><a href="#_3-6-2-磁盘驱动工作原理" class="header-anchor">#</a> 3.6.2 磁盘驱动工作原理</h3> <p>从机械上讲，硬盘驱动器包含一个或多个堆叠的盘片，它们在读/写磁头下旋转，很像旧的唱机，只是通过几张唱片一张叠在另一张上面增加了容量，，磁头来回移动以覆盖整个旋转盘片的表面；因为一个特殊的盘子在两面都是可读写的，所以一个读/写磁头可以浮在一个盘片上面，而在另一个盘片在下面。图3.8显示了一个典型的硬盘驱动器的内部情况，有一堆盘片和暴露在外面的磁头。请注意，软盘驱动也是这样的，软盘驱动通常只有一个双面软盘介质，而不是堆叠的盘片。</p> <p>盘片的金属涂层使其表面的特定区域能够被磁头磁化或消磁，从而允许在盘片上有效的永久记录任何状态. 因此，能够准确地描述磁盘表面的某个状态被读取或写入的位置是非常重要的，因此 柱面-磁头-扇区（CHS）寻址方式被使用，这实际上是一个三维坐标系（见图表3.9）</p> <ul><li><p>柱面（Cylinder）: 圆柱体描述了磁头与盘片外缘的距离，因为当几个盘片堆叠起来时，你可以看到所有的磁头相对堆叠的盘片选择了一个圆柱体，它也因此得名。</p></li> <li><p>磁头（Head）: 磁头描述了我们感兴趣的磁道（即柱面中那个具体的盘片表面）。</p></li> <li><p>扇区（Sector）: 环形的磁道被分割为很多扇区，通常每个扇区512字节，这些扇区可以使用扇区索引来引用。</p></li></ul> <img src="/os-dev/images/f3_8.png" alt="典型的启动后内存分布"> <blockquote><p>图表3.8: 硬盘驱动内部</p></blockquote> <img src="/os-dev/images/f3_9.png" alt="典型的启动后内存分布"> <blockquote><p>图表3.8: 硬盘的柱面、磁头、扇区结构</p></blockquote> <h3 id="_3-6-3-使用bios读取磁盘"><a href="#_3-6-3-使用bios读取磁盘" class="header-anchor">#</a> 3.6.3 使用BIOS读取磁盘</h3> <p>很快我们将看到，特定的设备需要编写特定的程序来使用它，例如软盘需要我们在使用它之前显示的启动和停止读写磁头下面旋转磁盘的马达，然而大多数硬盘设备在本地芯片上有更多的自动功能。还有不同的设备使用的不同的总线技术连接到CPU 也会影响我们访问它们，幸运的是 BIOS 能提供一些磁盘程序它将通用磁盘设备的不同处抽象化来。</p> <p>这里我们感兴趣的特殊 BIOS 程序通过在将al 设置为 0x02 后触发 0x13 中断来使用。这个BIOS 程序期望我们设置一些寄存器来描述使用哪一个磁盘设备，我们希望读取这个磁盘上的哪一块区域的代码块，以及将这些代码块保存到内存中何处。使用这个程序最困难的部分是，我们必须使用CHS寻址方案指定要读取的第一个块；接着，就是只需要填充预期寄存器，如下一个代码所描述。</p> <div class="language-nsam extra-class"><pre class="language-text"><code>mov ah, 0x02            ; BIOS read sector function
+mov dl, 0               ; Read drive 0 (i.e. first floppy drive)
+mov ch, 3               ; Select cylinder 3
+mov dh, 1               ; Select the track on 2nd side of floppy
+                        ; disk, since this count has a base of 0
+mov cl, 4               ; Select the 4th sector on the track -not,
+                        ; the 5th ince this has a base of 1. 
+mov al, 5               ; Read 5 sectors from the start point
+
+; Lastly, set the address that we'd like BIOS to read the
+; sectors to, which BIOS expects to find in ES:BX
+; (i.e. segment ES with offset BX).
+mov bx, 0xa000          ; Indirectly set Es to 0xa000
+mov es, bx              
+mov bx, 0x1234          ; Set BX to 0x1234
+; In our case, data will be read to 0xa000:0x1234, which the
+; CPU will translate to physical address 0xa1234
+
+int 0x13                ; Now issue the BIOS interrupt to do the actual read.
+
+</code></pre></div><p>Note that, for one reason or another (e.g. we indexed a sector beyond the limit of the disk, an attempt was made to read a faulty sector, the floppy disk was not inserted into the drive, etc.), BIOS may fail to read the disk for us, so it is important to know how to detect this; otherwise, we may think we have read some data but in fact the target address simply contains the same random bytes it did before we issued the read command. Fortunately for us, BIOS updates some registers to let us know what happened: the carry flag (CF) of the special flags register is set to signal a general fault, and al is set to the number of sectors actually read, as opposed to the number requested. After issuing the interrupt for the BIOS disk read, we can perform a simple check as follows:
+注意，由于某些原因（例如，我们索引了超出磁盘限制的扇区、试图读取故障扇区、软盘未插入驱动器等），BIOS可能在为我们读取磁盘时失败，因此了解如何检测这一点非常重要；否则，我们可能会认为已读取了一些数据，但实际上是目标地址上仍是我们发出读取命令之前的随机字节。幸运的是，BIOS更新了一些寄存器，以便我们知道发生了什么：特殊标志寄存器的进位标志（CF）被设置为发出一般故障的信号，al被设置为实际读取的扇区数，而不是请求的扇区数。发出BIOS磁盘读取中断后，我们可以执行以下简单检查：</p> <div class="language-nasm extra-class"><pre class="language-nasm"><code>
+...
+...
+int <span class="token number">0x13</span>            <span class="token comment">; Issue the BIOS interrupt to do the actual read.</span>
+jc disk_error       <span class="token comment">; jc is another jumping instruction, that jumps</span>
+                    <span class="token comment">; only if the carry flag was set.</span>
+<span class="token comment">; This jumps if what BIOS reported as the number of sectors</span>
+<span class="token comment">; actually read in AL is not equal to the number we expected.</span>
+cmp <span class="token register variable">al</span>, <span class="token operator">&lt;</span>no. sectors expected <span class="token operator">&gt;</span>
+jne disk_error
+
+disk_error :
+    mov <span class="token register variable">bx</span>, DISK_ERROR_MSG
+    call print_string
+    jmp <span class="token operator">$</span>
+
+<span class="token comment">; Global variables</span>
+<span class="token label function">DISK_ERROR_MSG:</span> db <span class="token string">&quot;Disk read error!&quot;</span>, <span class="token number">0</span>
+</code></pre></div><h3 id="_3-6-4-综合使用"><a href="#_3-6-4-综合使用" class="header-anchor">#</a> 3.6.4 综合使用</h3> <p>As explained earlier, being able to read more data from the disk will be essential for boot- strapping our operating system, so here we will put all of the ideas from this section into a helpful routine that will simply read the first n sectors following the boot sector from a specified disk device.
+如前所述，能够从磁盘读取更多数据对于引导我们的操作系统是至关重要的，因此在这里，我们将使用本节中的所学的知识编写一个有用的程序，这个程序只需从指定的磁盘设备上读取前n个扇区到引导扇区之后。</p> <div class="language-nasm extra-class"><pre class="language-nasm"><code><span class="token comment">; load DH sectors to ES:BX from drive DL</span>
+<span class="token label function">disk_load:</span>
+    push <span class="token register variable">dx</span>             <span class="token comment">; Store DX on stack so later we can recall</span>
+                        <span class="token comment">; how many sectors were request to be read,</span>
+                        <span class="token comment">; even if it is altered in the meantime</span>
+    mov <span class="token register variable">ah</span> , <span class="token number">0x02</span>       <span class="token comment">; BIOS read sector function</span>
+    mov <span class="token register variable">al</span>, hd          <span class="token comment">; Read DH sectors</span>
+    mov <span class="token register variable">ch</span>, <span class="token number">0x00</span>        <span class="token comment">; Select  cylinder 0</span>
+    mov <span class="token register variable">dh</span>, <span class="token number">0x00</span>        <span class="token comment">; Select  head 0</span>
+    mov <span class="token register variable">cl</span>, <span class="token number">0x02</span>        <span class="token comment">; Start reading from second sector (i.e.</span>
+                        <span class="token comment">; after the boot sector)</span>
+    
+    int <span class="token number">0x13</span>            <span class="token comment">; BIOS interrupt</span>
+
+    jc disk_error       <span class="token comment">; Jump if error (i.e. carry flag set)</span>
+
+    pop <span class="token register variable">dx</span>              <span class="token comment">; Restore DX from the stack</span>
+    cmp <span class="token register variable">dh</span>, <span class="token register variable">al</span>          <span class="token comment">; if AL (sectors read) != DH (sectors expected)</span>
+    jne disk_error      <span class="token comment">; display error message</span>
+    ret
+
+<span class="token label function">disk_error:</span>
+    mov <span class="token register variable">bx</span>, DISK_ERROR_MSG
+    call print_string
+    jmp <span class="token operator">$</span>
+<span class="token comment">;</span>
+DISK_ERROR_MSG db <span class="token string">&quot;Disk read error!&quot;</span>, <span class="token number">0</span>
+</code></pre></div><p>为了测试这个程序，我们可以编写一个引导扇区程序，如下所示：</p> <div class="language-nasm extra-class"><pre class="language-nasm"><code><span class="token operator">[</span>org <span class="token number">0x7c00</span><span class="token operator">]</span>
+
+mov <span class="token operator">[</span>BOOT_DRIVE<span class="token operator">]</span>, <span class="token register variable">dl</span>    <span class="token comment">; BIOS stores our boot drive in DL, so it's</span>
+                        <span class="token comment">; best to remember this for later.</span>
+
+mov <span class="token register variable">bp</span>, <span class="token number">0x8000</span>          <span class="token comment">; Here we set our stack safely out of the </span>
+mov <span class="token register variable">sp</span>, <span class="token register variable">bp</span>              <span class="token comment">; way, at 0x8000</span>
+
+mov <span class="token register variable">bx</span>, <span class="token number">0x9000</span>          <span class="token comment">; Load 5 sectors to 0x0000(ES):0x9000(BX)</span>
+mov <span class="token register variable">dh</span>, <span class="token number">5</span>               <span class="token comment">; from the boot disk.</span>
+mov <span class="token register variable">dl</span>, <span class="token operator">[</span>BOOT_DRIVE<span class="token operator">]</span>     
+calss disk_load
+
+mov <span class="token register variable">dx</span>, <span class="token operator">[</span><span class="token number">0x9000</span><span class="token operator">]</span>        <span class="token comment">; Print out the first loaded word, which</span>
+call print_hex          <span class="token comment">; we expect to be 0xdada, stored at address 0x9000</span>
+
+
+mov <span class="token register variable">dx</span>, <span class="token operator">[</span><span class="token number">0x9000</span> <span class="token operator">+</span> <span class="token number">512</span><span class="token operator">]</span>  <span class="token comment">; Also, print hte first word from the</span>
+call print_hex          <span class="token comment">; 2nd loaded sector: shourld be 0xface</span>
+
+jmp <span class="token operator">$</span>
+
+<span class="token operator">%</span>include <span class="token string">&quot;../print/print_string.asm&quot;</span>    <span class="token comment">; Re-use our print_string function</span>
+<span class="token operator">%</span>include <span class="token string">&quot;../hex/print_hex.asm&quot;</span>         <span class="token comment">; Re-use our print_hex function</span>
+<span class="token operator">%</span>include <span class="token string">&quot;disk_load.asm&quot;</span>                <span class="token comment">; Include our new disk_load function</span>
+
+<span class="token comment">; Global variables</span>
+<span class="token label function">BOOT_DRIVE:</span> db <span class="token number">0</span>
+
+<span class="token comment">; Bootsector padding</span>
+times <span class="token number">510</span><span class="token operator">-</span>(<span class="token operator">$</span><span class="token operator">-</span><span class="token operator">$</span><span class="token operator">$</span>) db <span class="token number">0</span> dw <span class="token number">0xaa55</span>
+
+<span class="token comment">; We know that BIOS will load only the first 512-byte sector from the disk, </span>
+<span class="token comment">; so if we purposely add a few more sectors to our code by repeating some</span>
+<span class="token comment">; familiar numbers, we can prove to ourselfs that we actually loaded those </span>
+<span class="token comment">; additional two sectors from the disk we booted from.</span>
+times <span class="token number">256</span> dw <span class="token number">0xdada</span> 
+times <span class="token number">256</span> dw <span class="token number">0xface</span>
+
+</code></pre></div></div> <footer class="page-edit"><!----> <div class="last-updated"><span class="prefix">最近更新:</span> <span class="time">2020/12/23 上午7:56:16</span></div></footer> <div class="page-nav"><p class="inner"><span class="prev">
       ←
       <a href="/os-dev/doc/computer-architecture-and-the-boot-process.html" class="prev">
         2. 计算机体系结构与引导流程
       </a></span> <!----></p></div> </main></div><div class="global-ui"></div></div>
-    <script src="/os-dev/assets/js/app.e645df5d.js" defer></script><script src="/os-dev/assets/js/2.0c2d34ad.js" defer></script><script src="/os-dev/assets/js/11.6a490fb5.js" defer></script>
+    <script src="/os-dev/assets/js/app.bb176265.js" defer></script><script src="/os-dev/assets/js/2.0c2d34ad.js" defer></script><script src="/os-dev/assets/js/11.3babf7d3.js" defer></script>
   </body>
 </html>
