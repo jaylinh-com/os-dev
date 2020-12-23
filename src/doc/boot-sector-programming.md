@@ -715,7 +715,6 @@ int 0x13                ; Now issue the BIOS interrupt to do the actual read.
 
 ```
 
-Note that, for one reason or another (e.g. we indexed a sector beyond the limit of the disk, an attempt was made to read a faulty sector, the floppy disk was not inserted into the drive, etc.), BIOS may fail to read the disk for us, so it is important to know how to detect this; otherwise, we may think we have read some data but in fact the target address simply contains the same random bytes it did before we issued the read command. Fortunately for us, BIOS updates some registers to let us know what happened: the carry flag (CF) of the special flags register is set to signal a general fault, and al is set to the number of sectors actually read, as opposed to the number requested. After issuing the interrupt for the BIOS disk read, we can perform a simple check as follows:
 注意，由于某些原因（例如，我们索引了超出磁盘限制的扇区、试图读取故障扇区、软盘未插入驱动器等），BIOS可能在为我们读取磁盘时失败，因此了解如何检测这一点非常重要；否则，我们可能会认为已读取了一些数据，但实际上是目标地址上仍是我们发出读取命令之前的随机字节。幸运的是，BIOS更新了一些寄存器，以便我们知道发生了什么：特殊标志寄存器的进位标志（CF）被设置为发出一般故障的信号，al被设置为实际读取的扇区数，而不是请求的扇区数。发出BIOS磁盘读取中断后，我们可以执行以下简单检查：
 
 ```nasm
@@ -741,7 +740,6 @@ DISK_ERROR_MSG: db "Disk read error!", 0
 
 
 ### 3.6.4 综合使用
-As explained earlier, being able to read more data from the disk will be essential for boot- strapping our operating system, so here we will put all of the ideas from this section into a helpful routine that will simply read the first n sectors following the boot sector from a specified disk device.
 如前所述，能够从磁盘读取更多数据对于引导我们的操作系统是至关重要的，因此在这里，我们将使用本节中的所学的知识编写一个有用的程序，这个程序只需从指定的磁盘设备上读取前n个扇区到引导扇区之后。
 
 
