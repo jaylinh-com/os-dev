@@ -750,7 +750,7 @@ disk_load:
                         ; how many sectors were request to be read,
                         ; even if it is altered in the meantime
     mov ah , 0x02       ; BIOS read sector function
-    mov al, hd          ; Read DH sectors
+    mov al, dh          ; Read DH sectors
     mov ch, 0x00        ; Select  cylinder 0
     mov dh, 0x00        ; Select  head 0
     mov cl, 0x02        ; Start reading from second sector (i.e.
@@ -784,10 +784,10 @@ mov [BOOT_DRIVE], dl    ; BIOS stores our boot drive in DL, so it's
 mov bp, 0x8000          ; Here we set our stack safely out of the 
 mov sp, bp              ; way, at 0x8000
 
-mov bx, 0x9000          ; Load 5 sectors to 0x0000(ES):0x9000(BX)
-mov dh, 5               ; from the boot disk.
+mov bx, 0x9000          ; Load 2 sectors to 0x0000(ES):0x9000(BX)
+mov dh, 2               ; from the boot disk.   译者注： 这里应该为2 因为这里只定义了3 * 512 字节，并没有6个字节的大小
 mov dl, [BOOT_DRIVE]     
-calss disk_load
+call disk_load
 
 mov dx, [0x9000]        ; Print out the first loaded word, which
 call print_hex          ; we expect to be 0xdada, stored at address 0x9000
@@ -806,7 +806,8 @@ jmp $
 BOOT_DRIVE: db 0
 
 ; Bootsector padding
-times 510-($-$$) db 0 dw 0xaa55
+times 510-($-$$) db 0 
+dw 0xaa55
 
 ; We know that BIOS will load only the first 512-byte sector from the disk, 
 ; so if we purposely add a few more sectors to our code by repeating some
