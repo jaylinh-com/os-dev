@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     
-    <link rel="preload" href="/os-dev/assets/css/0.styles.f631a23c.css" as="style"><link rel="preload" href="/os-dev/assets/js/app.05af8bbd.js" as="script"><link rel="preload" href="/os-dev/assets/js/2.0c2d34ad.js" as="script"><link rel="preload" href="/os-dev/assets/js/11.6e88b8dd.js" as="script"><link rel="prefetch" href="/os-dev/assets/js/10.e27cce2f.js"><link rel="prefetch" href="/os-dev/assets/js/12.0fd31076.js"><link rel="prefetch" href="/os-dev/assets/js/13.72b59380.js"><link rel="prefetch" href="/os-dev/assets/js/14.7191f0bb.js"><link rel="prefetch" href="/os-dev/assets/js/15.2435b32a.js"><link rel="prefetch" href="/os-dev/assets/js/16.a68b38a0.js"><link rel="prefetch" href="/os-dev/assets/js/17.ea94724d.js"><link rel="prefetch" href="/os-dev/assets/js/18.e797f3d8.js"><link rel="prefetch" href="/os-dev/assets/js/19.c1e47845.js"><link rel="prefetch" href="/os-dev/assets/js/20.0bb9ad2c.js"><link rel="prefetch" href="/os-dev/assets/js/3.03d08e27.js"><link rel="prefetch" href="/os-dev/assets/js/4.880e7f6b.js"><link rel="prefetch" href="/os-dev/assets/js/5.31ed563c.js"><link rel="prefetch" href="/os-dev/assets/js/6.73c063ed.js"><link rel="prefetch" href="/os-dev/assets/js/7.294a7cdc.js"><link rel="prefetch" href="/os-dev/assets/js/8.5993cf55.js"><link rel="prefetch" href="/os-dev/assets/js/9.3112df6c.js">
+    <link rel="preload" href="/os-dev/assets/css/0.styles.f631a23c.css" as="style"><link rel="preload" href="/os-dev/assets/js/app.983a1154.js" as="script"><link rel="preload" href="/os-dev/assets/js/2.0c2d34ad.js" as="script"><link rel="preload" href="/os-dev/assets/js/11.f2c44194.js" as="script"><link rel="prefetch" href="/os-dev/assets/js/10.e27cce2f.js"><link rel="prefetch" href="/os-dev/assets/js/12.0fd31076.js"><link rel="prefetch" href="/os-dev/assets/js/13.72b59380.js"><link rel="prefetch" href="/os-dev/assets/js/14.7191f0bb.js"><link rel="prefetch" href="/os-dev/assets/js/15.2435b32a.js"><link rel="prefetch" href="/os-dev/assets/js/16.a68b38a0.js"><link rel="prefetch" href="/os-dev/assets/js/17.ea94724d.js"><link rel="prefetch" href="/os-dev/assets/js/18.e797f3d8.js"><link rel="prefetch" href="/os-dev/assets/js/19.c1e47845.js"><link rel="prefetch" href="/os-dev/assets/js/20.0bb9ad2c.js"><link rel="prefetch" href="/os-dev/assets/js/3.03d08e27.js"><link rel="prefetch" href="/os-dev/assets/js/4.880e7f6b.js"><link rel="prefetch" href="/os-dev/assets/js/5.31ed563c.js"><link rel="prefetch" href="/os-dev/assets/js/6.73c063ed.js"><link rel="prefetch" href="/os-dev/assets/js/7.294a7cdc.js"><link rel="prefetch" href="/os-dev/assets/js/8.5993cf55.js"><link rel="prefetch" href="/os-dev/assets/js/9.3112df6c.js">
     <link rel="stylesheet" href="/os-dev/assets/css/0.styles.f631a23c.css">
   </head>
   <body>
@@ -454,7 +454,7 @@ disk_error :
                         <span class="token comment">; how many sectors were request to be read,</span>
                         <span class="token comment">; even if it is altered in the meantime</span>
     mov <span class="token register variable">ah</span> , <span class="token number">0x02</span>       <span class="token comment">; BIOS read sector function</span>
-    mov <span class="token register variable">al</span>, hd          <span class="token comment">; Read DH sectors</span>
+    mov <span class="token register variable">al</span>, <span class="token register variable">dh</span>          <span class="token comment">; Read DH sectors</span>
     mov <span class="token register variable">ch</span>, <span class="token number">0x00</span>        <span class="token comment">; Select  cylinder 0</span>
     mov <span class="token register variable">dh</span>, <span class="token number">0x00</span>        <span class="token comment">; Select  head 0</span>
     mov <span class="token register variable">cl</span>, <span class="token number">0x02</span>        <span class="token comment">; Start reading from second sector (i.e.</span>
@@ -483,10 +483,10 @@ mov <span class="token operator">[</span>BOOT_DRIVE<span class="token operator">
 mov <span class="token register variable">bp</span>, <span class="token number">0x8000</span>          <span class="token comment">; Here we set our stack safely out of the </span>
 mov <span class="token register variable">sp</span>, <span class="token register variable">bp</span>              <span class="token comment">; way, at 0x8000</span>
 
-mov <span class="token register variable">bx</span>, <span class="token number">0x9000</span>          <span class="token comment">; Load 5 sectors to 0x0000(ES):0x9000(BX)</span>
-mov <span class="token register variable">dh</span>, <span class="token number">5</span>               <span class="token comment">; from the boot disk.</span>
+mov <span class="token register variable">bx</span>, <span class="token number">0x9000</span>          <span class="token comment">; Load 2 sectors to 0x0000(ES):0x9000(BX)</span>
+mov <span class="token register variable">dh</span>, <span class="token number">2</span>               <span class="token comment">; from the boot disk.   译者注： 这里应该为2 因为这里只定义了3 * 512 字节，并没有6个字节的大小</span>
 mov <span class="token register variable">dl</span>, <span class="token operator">[</span>BOOT_DRIVE<span class="token operator">]</span>     
-calss disk_load
+call disk_load
 
 mov <span class="token register variable">dx</span>, <span class="token operator">[</span><span class="token number">0x9000</span><span class="token operator">]</span>        <span class="token comment">; Print out the first loaded word, which</span>
 call print_hex          <span class="token comment">; we expect to be 0xdada, stored at address 0x9000</span>
@@ -505,7 +505,8 @@ jmp <span class="token operator">$</span>
 <span class="token label function">BOOT_DRIVE:</span> db <span class="token number">0</span>
 
 <span class="token comment">; Bootsector padding</span>
-times <span class="token number">510</span><span class="token operator">-</span>(<span class="token operator">$</span><span class="token operator">-</span><span class="token operator">$</span><span class="token operator">$</span>) db <span class="token number">0</span> dw <span class="token number">0xaa55</span>
+times <span class="token number">510</span><span class="token operator">-</span>(<span class="token operator">$</span><span class="token operator">-</span><span class="token operator">$</span><span class="token operator">$</span>) db <span class="token number">0</span> 
+dw <span class="token number">0xaa55</span>
 
 <span class="token comment">; We know that BIOS will load only the first 512-byte sector from the disk, </span>
 <span class="token comment">; so if we purposely add a few more sectors to our code by repeating some</span>
@@ -514,11 +515,11 @@ times <span class="token number">510</span><span class="token operator">-</span>
 times <span class="token number">256</span> dw <span class="token number">0xdada</span> 
 times <span class="token number">256</span> dw <span class="token number">0xface</span>
 
-</code></pre></div></div> <footer class="page-edit"><!----> <div class="last-updated"><span class="prefix">最近更新:</span> <span class="time">2020/12/23 上午7:57:00</span></div></footer> <div class="page-nav"><p class="inner"><span class="prev">
+</code></pre></div></div> <footer class="page-edit"><!----> <div class="last-updated"><span class="prefix">最近更新:</span> <span class="time">2020/12/23 上午8:47:59</span></div></footer> <div class="page-nav"><p class="inner"><span class="prev">
       ←
       <a href="/os-dev/doc/computer-architecture-and-the-boot-process.html" class="prev">
         2. 计算机体系结构与引导流程
       </a></span> <!----></p></div> </main></div><div class="global-ui"></div></div>
-    <script src="/os-dev/assets/js/app.05af8bbd.js" defer></script><script src="/os-dev/assets/js/2.0c2d34ad.js" defer></script><script src="/os-dev/assets/js/11.6e88b8dd.js" defer></script>
+    <script src="/os-dev/assets/js/app.983a1154.js" defer></script><script src="/os-dev/assets/js/2.0c2d34ad.js" defer></script><script src="/os-dev/assets/js/11.f2c44194.js" defer></script>
   </body>
 </html>
