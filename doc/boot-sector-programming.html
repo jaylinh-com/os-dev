@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     
-    <link rel="preload" href="/os-dev/assets/css/0.styles.f631a23c.css" as="style"><link rel="preload" href="/os-dev/assets/js/app.bb176265.js" as="script"><link rel="preload" href="/os-dev/assets/js/2.0c2d34ad.js" as="script"><link rel="preload" href="/os-dev/assets/js/11.3babf7d3.js" as="script"><link rel="prefetch" href="/os-dev/assets/js/10.e27cce2f.js"><link rel="prefetch" href="/os-dev/assets/js/12.0fd31076.js"><link rel="prefetch" href="/os-dev/assets/js/13.72b59380.js"><link rel="prefetch" href="/os-dev/assets/js/14.7191f0bb.js"><link rel="prefetch" href="/os-dev/assets/js/15.2435b32a.js"><link rel="prefetch" href="/os-dev/assets/js/16.a68b38a0.js"><link rel="prefetch" href="/os-dev/assets/js/17.ea94724d.js"><link rel="prefetch" href="/os-dev/assets/js/18.e797f3d8.js"><link rel="prefetch" href="/os-dev/assets/js/19.c1e47845.js"><link rel="prefetch" href="/os-dev/assets/js/20.0bb9ad2c.js"><link rel="prefetch" href="/os-dev/assets/js/3.03d08e27.js"><link rel="prefetch" href="/os-dev/assets/js/4.880e7f6b.js"><link rel="prefetch" href="/os-dev/assets/js/5.31ed563c.js"><link rel="prefetch" href="/os-dev/assets/js/6.73c063ed.js"><link rel="prefetch" href="/os-dev/assets/js/7.294a7cdc.js"><link rel="prefetch" href="/os-dev/assets/js/8.5993cf55.js"><link rel="prefetch" href="/os-dev/assets/js/9.3112df6c.js">
+    <link rel="preload" href="/os-dev/assets/css/0.styles.f631a23c.css" as="style"><link rel="preload" href="/os-dev/assets/js/app.05af8bbd.js" as="script"><link rel="preload" href="/os-dev/assets/js/2.0c2d34ad.js" as="script"><link rel="preload" href="/os-dev/assets/js/11.6e88b8dd.js" as="script"><link rel="prefetch" href="/os-dev/assets/js/10.e27cce2f.js"><link rel="prefetch" href="/os-dev/assets/js/12.0fd31076.js"><link rel="prefetch" href="/os-dev/assets/js/13.72b59380.js"><link rel="prefetch" href="/os-dev/assets/js/14.7191f0bb.js"><link rel="prefetch" href="/os-dev/assets/js/15.2435b32a.js"><link rel="prefetch" href="/os-dev/assets/js/16.a68b38a0.js"><link rel="prefetch" href="/os-dev/assets/js/17.ea94724d.js"><link rel="prefetch" href="/os-dev/assets/js/18.e797f3d8.js"><link rel="prefetch" href="/os-dev/assets/js/19.c1e47845.js"><link rel="prefetch" href="/os-dev/assets/js/20.0bb9ad2c.js"><link rel="prefetch" href="/os-dev/assets/js/3.03d08e27.js"><link rel="prefetch" href="/os-dev/assets/js/4.880e7f6b.js"><link rel="prefetch" href="/os-dev/assets/js/5.31ed563c.js"><link rel="prefetch" href="/os-dev/assets/js/6.73c063ed.js"><link rel="prefetch" href="/os-dev/assets/js/7.294a7cdc.js"><link rel="prefetch" href="/os-dev/assets/js/8.5993cf55.js"><link rel="prefetch" href="/os-dev/assets/js/9.3112df6c.js">
     <link rel="stylesheet" href="/os-dev/assets/css/0.styles.f631a23c.css">
   </head>
   <body>
@@ -430,8 +430,7 @@ mov bx, 0x1234          ; Set BX to 0x1234
 
 int 0x13                ; Now issue the BIOS interrupt to do the actual read.
 
-</code></pre></div><p>Note that, for one reason or another (e.g. we indexed a sector beyond the limit of the disk, an attempt was made to read a faulty sector, the floppy disk was not inserted into the drive, etc.), BIOS may fail to read the disk for us, so it is important to know how to detect this; otherwise, we may think we have read some data but in fact the target address simply contains the same random bytes it did before we issued the read command. Fortunately for us, BIOS updates some registers to let us know what happened: the carry flag (CF) of the special flags register is set to signal a general fault, and al is set to the number of sectors actually read, as opposed to the number requested. After issuing the interrupt for the BIOS disk read, we can perform a simple check as follows:
-注意，由于某些原因（例如，我们索引了超出磁盘限制的扇区、试图读取故障扇区、软盘未插入驱动器等），BIOS可能在为我们读取磁盘时失败，因此了解如何检测这一点非常重要；否则，我们可能会认为已读取了一些数据，但实际上是目标地址上仍是我们发出读取命令之前的随机字节。幸运的是，BIOS更新了一些寄存器，以便我们知道发生了什么：特殊标志寄存器的进位标志（CF）被设置为发出一般故障的信号，al被设置为实际读取的扇区数，而不是请求的扇区数。发出BIOS磁盘读取中断后，我们可以执行以下简单检查：</p> <div class="language-nasm extra-class"><pre class="language-nasm"><code>
+</code></pre></div><p>注意，由于某些原因（例如，我们索引了超出磁盘限制的扇区、试图读取故障扇区、软盘未插入驱动器等），BIOS可能在为我们读取磁盘时失败，因此了解如何检测这一点非常重要；否则，我们可能会认为已读取了一些数据，但实际上是目标地址上仍是我们发出读取命令之前的随机字节。幸运的是，BIOS更新了一些寄存器，以便我们知道发生了什么：特殊标志寄存器的进位标志（CF）被设置为发出一般故障的信号，al被设置为实际读取的扇区数，而不是请求的扇区数。发出BIOS磁盘读取中断后，我们可以执行以下简单检查：</p> <div class="language-nasm extra-class"><pre class="language-nasm"><code>
 ...
 ...
 int <span class="token number">0x13</span>            <span class="token comment">; Issue the BIOS interrupt to do the actual read.</span>
@@ -449,8 +448,7 @@ disk_error :
 
 <span class="token comment">; Global variables</span>
 <span class="token label function">DISK_ERROR_MSG:</span> db <span class="token string">&quot;Disk read error!&quot;</span>, <span class="token number">0</span>
-</code></pre></div><h3 id="_3-6-4-综合使用"><a href="#_3-6-4-综合使用" class="header-anchor">#</a> 3.6.4 综合使用</h3> <p>As explained earlier, being able to read more data from the disk will be essential for boot- strapping our operating system, so here we will put all of the ideas from this section into a helpful routine that will simply read the first n sectors following the boot sector from a specified disk device.
-如前所述，能够从磁盘读取更多数据对于引导我们的操作系统是至关重要的，因此在这里，我们将使用本节中的所学的知识编写一个有用的程序，这个程序只需从指定的磁盘设备上读取前n个扇区到引导扇区之后。</p> <div class="language-nasm extra-class"><pre class="language-nasm"><code><span class="token comment">; load DH sectors to ES:BX from drive DL</span>
+</code></pre></div><h3 id="_3-6-4-综合使用"><a href="#_3-6-4-综合使用" class="header-anchor">#</a> 3.6.4 综合使用</h3> <p>如前所述，能够从磁盘读取更多数据对于引导我们的操作系统是至关重要的，因此在这里，我们将使用本节中的所学的知识编写一个有用的程序，这个程序只需从指定的磁盘设备上读取前n个扇区到引导扇区之后。</p> <div class="language-nasm extra-class"><pre class="language-nasm"><code><span class="token comment">; load DH sectors to ES:BX from drive DL</span>
 <span class="token label function">disk_load:</span>
     push <span class="token register variable">dx</span>             <span class="token comment">; Store DX on stack so later we can recall</span>
                         <span class="token comment">; how many sectors were request to be read,</span>
@@ -516,11 +514,11 @@ times <span class="token number">510</span><span class="token operator">-</span>
 times <span class="token number">256</span> dw <span class="token number">0xdada</span> 
 times <span class="token number">256</span> dw <span class="token number">0xface</span>
 
-</code></pre></div></div> <footer class="page-edit"><!----> <div class="last-updated"><span class="prefix">最近更新:</span> <span class="time">2020/12/23 上午7:56:16</span></div></footer> <div class="page-nav"><p class="inner"><span class="prev">
+</code></pre></div></div> <footer class="page-edit"><!----> <div class="last-updated"><span class="prefix">最近更新:</span> <span class="time">2020/12/23 上午7:57:00</span></div></footer> <div class="page-nav"><p class="inner"><span class="prev">
       ←
       <a href="/os-dev/doc/computer-architecture-and-the-boot-process.html" class="prev">
         2. 计算机体系结构与引导流程
       </a></span> <!----></p></div> </main></div><div class="global-ui"></div></div>
-    <script src="/os-dev/assets/js/app.bb176265.js" defer></script><script src="/os-dev/assets/js/2.0c2d34ad.js" defer></script><script src="/os-dev/assets/js/11.3babf7d3.js" defer></script>
+    <script src="/os-dev/assets/js/app.05af8bbd.js" defer></script><script src="/os-dev/assets/js/2.0c2d34ad.js" defer></script><script src="/os-dev/assets/js/11.6e88b8dd.js" defer></script>
   </body>
 </html>
