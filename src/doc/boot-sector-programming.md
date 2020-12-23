@@ -533,7 +533,7 @@ call my_print_function
 ```
 
 
-### 3.4.8 结合起来
+### 3.4.8 综合使用
 我们现在已经有足够的对CPU和汇编的知识，来完成一个稍微复杂一点的“Hello Wrold”引导扇区程序。
 
 #### 问题4
@@ -611,6 +611,210 @@ HEX_OUT: db ’0x0000’,0
 完成 `print_hex` 函数的实现。你会发现 `and` 和 `shr` 这两个 CPU 指令很有用，你可以从互联网上找到这2个命令的使用信息。确保使用你自己的语言来注释并充分解释你的代码。
 
 ## 3.6 读取磁盘
+我们已经介绍了BIOS，并且在计算机底层环境里编写了一些程序，但是在我们编写操作系统的路上还有一个小问题摆在我们面前：BIOS从磁盘的第一个扇区加载我们的引导代码，但是这是它加载的所有代码了，如果我们的的操作系统代码操作512字节怎么办呢？我猜一定会超过的。
 
+操作系统通常不会只占用一个扇区（512字节），所以它们需要做的第一件事就是从磁盘中将其他剩下的代码加载到内存中，然后开始执行这些代码。幸运的是，BIOS给我们提供了程序允许我们操作驱动上的数据。
 
 ### 3.6.1 通过 Segments 来扩展内存访问
+当CPU 运行在最初的16位实模式下，寄存器的大小最大为16位，这意味着指令能引用的最大的地址位0xffff，用今天的标准它只相当于区区64 KB（65536字节）。可能现在我们想要的简单操作系统不受这个限制的影响，但是对于一个现代的操作系统来说这个狭窄的盒子就太小了，所以了解这个问题的解决方案-分割很重要。
+
+为了解决这个限制，CPU 的设计者们增加了一些特殊的寄存器 `cs`， `ds`， `ss`， 和 `es` 统称为段寄存器。我们可以将主存想象为被切割的很多片段，这些片段通过段寄存器索引，这样当我们指定一个16为的地址，CPU通过使用合适的段的起始地址加上我们指定的地址的偏移量来自动计算出绝对地址. 我的意思是储备明确的指定否则使用合适的段，CPU 会根据我们的指令的上下文选择合适的段寄存器来偏移我们的地址，例如：`mov ax，[0x45ef]` 指令中使用的地址将默认从 数据段(data segment) 偏移，使用ds索引；类似的还有 栈段(stack segment)ss 用来修改栈基指针 bp 的实际地址。
+
+关于段寻址最让人困惑的是相邻的段对于16字节几乎完全重叠。所以不同的段和偏移量的组合能实际上指向同一个物理地址；现在说到这里就够了：我们在看一些例子之前很难真的掌握这些概念。
+
+为了计算绝对地址 CPU 将段寄存器中的地址乘以16然后加上你的偏移地址；因为我们使用的是16进制，当我们需要乘以16时只需要简单的将值左移一位就行了(例如 0x42 * 16 = 0x420). 所以如果我们将ds 设置为 0x4d 然后执行 `mov ax, [0x20]`, `ax` 中值的实际上将从地址0x4d0处加载
+（16 * 0x4d + 0x20）.
+
+```nasm
+;
+; A simple boot sector program that demonstrates segment offsetting 
+;
+
+mov ah, 0x0e                    ;int 10/ah = 0eh -> scrolling teletype BIOS routine
+
+mov al, [the_secret]
+int 0x10                        ; Does this print an X?
+
+mov bx, 0x7c0                   ; Can’t set ds directly , so set bx
+mov ds, bx                      ; then copy bx to ds.
+mov al, [the_secret]            
+int 0x10                        ; Does this print an X?
+
+
+mov al, [es:the_secret]         ; Tell the CPU to use the es (not ds) segment.
+int 0x10                        ; Does this print an X?
+
+mov bx, 0x7c0
+mov es, bx
+mov al [es:the_secret], 
+int 0x10                        ; Does this print an X?
+
+jmp $
+
+the_secret:
+    db "X"
+
+; Padding and magic BIOS number. 
+times 510-($-$$) db 0
+dw 0xaa55
+
+```
+
+图表3.7展示了我们如何使用 `ds` 来实现类似第3.4.2节当时我们使用`[org 0x7c00]`来纠正标签寻址的问题。因为我们不实用 `org` 命令，当我们的代码被BIOS加载到地址0x7c00处，汇编程序就不会将标签偏移到正确的内存位置,所以第一次尝试打印一个'X'将会失败。但是如果我们将数据段寄存器为0x7c0后 CPU 将替我们执行这个偏移（0x7c0 * 16 + the_secret），所以第二次尝试会成功的打印'X'。在第三和第四次尝试中我们使用来相同的方式并得到相同的结果，但是这次我们明确的告诉CPU 在计算物理地址的时候使用通用寄存器es。
+
+注意这里显示的CPU电路的局限性（至少在16位实模式下），像 mov ds, 0x1234 这样看起来正确的指令其实是错误的。仅因为我们能将一个地址字面量直接存到通用寄存器中（例如 mov ax, 0x1234 或者 mov cx, 0xdf）,当这并不意味着我们能对任何类型的寄存器做这个操作，例如 段寄存器 等。像图表3.7中一样我们必须增加额外一步来通过通用寄存器来转化这个值。
+
+所以 基于段的寻址允许我们触达更远的内存空间，上升到大概 1MB（0xffff * 16 + 0xffff）.后面当我们切换到32为保护模式后，我们将看到怎么访问更多的地址，对于现阶段了解16位实模式下基于段的寻址就够了。
+
+### 3.6.2 磁盘驱动工作原理
+从机械上讲，硬盘驱动器包含一个或多个堆叠的盘片，它们在读/写磁头下旋转，很像旧的唱机，只是通过几张唱片一张叠在另一张上面增加了容量，，磁头来回移动以覆盖整个旋转盘片的表面；因为一个特殊的盘子在两面都是可读写的，所以一个读/写磁头可以浮在一个盘片上面，而在另一个盘片在下面。图3.8显示了一个典型的硬盘驱动器的内部情况，有一堆盘片和暴露在外面的磁头。请注意，软盘驱动也是这样的，软盘驱动通常只有一个双面软盘介质，而不是堆叠的盘片。
+
+盘片的金属涂层使其表面的特定区域能够被磁头磁化或消磁，从而允许在盘片上有效的永久记录任何状态. 因此，能够准确地描述磁盘表面的某个状态被读取或写入的位置是非常重要的，因此 柱面-磁头-扇区（CHS）寻址方式被使用，这实际上是一个三维坐标系（见图表3.9）
+
+* 柱面（Cylinder）: 圆柱体描述了磁头与盘片外缘的距离，因为当几个盘片堆叠起来时，你可以看到所有的磁头相对堆叠的盘片选择了一个圆柱体，它也因此得名。
+
+* 磁头（Head）: 磁头描述了我们感兴趣的磁道（即柱面中那个具体的盘片表面）。
+
+* 扇区（Sector）: 环形的磁道被分割为很多扇区，通常每个扇区512字节，这些扇区可以使用扇区索引来引用。
+
+
+<img :src="$withBase('/images/f3_8.png')" alt="典型的启动后内存分布">
+
+>图表3.8: 硬盘驱动内部
+
+<img :src="$withBase('/images/f3_9.png')" alt="典型的启动后内存分布">
+
+>图表3.8: 硬盘的柱面、磁头、扇区结构
+
+
+### 3.6.3 使用BIOS读取磁盘
+很快我们将看到，特定的设备需要编写特定的程序来使用它，例如软盘需要我们在使用它之前显示的启动和停止读写磁头下面旋转磁盘的马达，然而大多数硬盘设备在本地芯片上有更多的自动功能。还有不同的设备使用的不同的总线技术连接到CPU 也会影响我们访问它们，幸运的是 BIOS 能提供一些磁盘程序它将通用磁盘设备的不同处抽象化来。
+
+这里我们感兴趣的特殊 BIOS 程序通过在将al 设置为 0x02 后触发 0x13 中断来使用。这个BIOS 程序期望我们设置一些寄存器来描述使用哪一个磁盘设备，我们希望读取这个磁盘上的哪一块区域的代码块，以及将这些代码块保存到内存中何处。使用这个程序最困难的部分是，我们必须使用CHS寻址方案指定要读取的第一个块；接着，就是只需要填充预期寄存器，如下一个代码所描述。
+
+```nsam
+mov ah, 0x02            ; BIOS read sector function
+mov dl, 0               ; Read drive 0 (i.e. first floppy drive)
+mov ch, 3               ; Select cylinder 3
+mov dh, 1               ; Select the track on 2nd side of floppy
+                        ; disk, since this count has a base of 0
+mov cl, 4               ; Select the 4th sector on the track -not,
+                        ; the 5th ince this has a base of 1. 
+mov al, 5               ; Read 5 sectors from the start point
+
+; Lastly, set the address that we'd like BIOS to read the
+; sectors to, which BIOS expects to find in ES:BX
+; (i.e. segment ES with offset BX).
+mov bx, 0xa000          ; Indirectly set Es to 0xa000
+mov es, bx              
+mov bx, 0x1234          ; Set BX to 0x1234
+; In our case, data will be read to 0xa000:0x1234, which the
+; CPU will translate to physical address 0xa1234
+
+int 0x13                ; Now issue the BIOS interrupt to do the actual read.
+
+```
+
+Note that, for one reason or another (e.g. we indexed a sector beyond the limit of the disk, an attempt was made to read a faulty sector, the floppy disk was not inserted into the drive, etc.), BIOS may fail to read the disk for us, so it is important to know how to detect this; otherwise, we may think we have read some data but in fact the target address simply contains the same random bytes it did before we issued the read command. Fortunately for us, BIOS updates some registers to let us know what happened: the carry flag (CF) of the special flags register is set to signal a general fault, and al is set to the number of sectors actually read, as opposed to the number requested. After issuing the interrupt for the BIOS disk read, we can perform a simple check as follows:
+注意，由于某些原因（例如，我们索引了超出磁盘限制的扇区、试图读取故障扇区、软盘未插入驱动器等），BIOS可能在为我们读取磁盘时失败，因此了解如何检测这一点非常重要；否则，我们可能会认为已读取了一些数据，但实际上是目标地址上仍是我们发出读取命令之前的随机字节。幸运的是，BIOS更新了一些寄存器，以便我们知道发生了什么：特殊标志寄存器的进位标志（CF）被设置为发出一般故障的信号，al被设置为实际读取的扇区数，而不是请求的扇区数。发出BIOS磁盘读取中断后，我们可以执行以下简单检查：
+
+```nasm
+
+...
+...
+int 0x13            ; Issue the BIOS interrupt to do the actual read.
+jc disk_error       ; jc is another jumping instruction, that jumps
+                    ; only if the carry flag was set.
+; This jumps if what BIOS reported as the number of sectors
+; actually read in AL is not equal to the number we expected.
+cmp al, <no. sectors expected >
+jne disk_error
+
+disk_error :
+    mov bx, DISK_ERROR_MSG
+    call print_string
+    jmp $
+
+; Global variables
+DISK_ERROR_MSG: db "Disk read error!", 0
+```
+
+
+### 3.6.4 综合使用
+As explained earlier, being able to read more data from the disk will be essential for boot- strapping our operating system, so here we will put all of the ideas from this section into a helpful routine that will simply read the first n sectors following the boot sector from a specified disk device.
+如前所述，能够从磁盘读取更多数据对于引导我们的操作系统是至关重要的，因此在这里，我们将使用本节中的所学的知识编写一个有用的程序，这个程序只需从指定的磁盘设备上读取前n个扇区到引导扇区之后。
+
+
+```nasm
+; load DH sectors to ES:BX from drive DL
+disk_load:
+    push dx             ; Store DX on stack so later we can recall
+                        ; how many sectors were request to be read,
+                        ; even if it is altered in the meantime
+    mov ah , 0x02       ; BIOS read sector function
+    mov al, hd          ; Read DH sectors
+    mov ch, 0x00        ; Select  cylinder 0
+    mov dh, 0x00        ; Select  head 0
+    mov cl, 0x02        ; Start reading from second sector (i.e.
+                        ; after the boot sector)
+    
+    int 0x13            ; BIOS interrupt
+
+    jc disk_error       ; Jump if error (i.e. carry flag set)
+
+    pop dx              ; Restore DX from the stack
+    cmp dh, al          ; if AL (sectors read) != DH (sectors expected)
+    jne disk_error      ; display error message
+    ret
+
+disk_error:
+    mov bx, DISK_ERROR_MSG
+    call print_string
+    jmp $
+;
+DISK_ERROR_MSG db "Disk read error!", 0
+```
+
+为了测试这个程序，我们可以编写一个引导扇区程序，如下所示：
+
+```nasm
+[org 0x7c00]
+
+mov [BOOT_DRIVE], dl    ; BIOS stores our boot drive in DL, so it's
+                        ; best to remember this for later.
+
+mov bp, 0x8000          ; Here we set our stack safely out of the 
+mov sp, bp              ; way, at 0x8000
+
+mov bx, 0x9000          ; Load 5 sectors to 0x0000(ES):0x9000(BX)
+mov dh, 5               ; from the boot disk.
+mov dl, [BOOT_DRIVE]     
+calss disk_load
+
+mov dx, [0x9000]        ; Print out the first loaded word, which
+call print_hex          ; we expect to be 0xdada, stored at address 0x9000
+
+
+mov dx, [0x9000 + 512]  ; Also, print hte first word from the
+call print_hex          ; 2nd loaded sector: shourld be 0xface
+
+jmp $
+
+%include "../print/print_string.asm"    ; Re-use our print_string function
+%include "../hex/print_hex.asm"         ; Re-use our print_hex function
+%include "disk_load.asm"                ; Include our new disk_load function
+
+; Global variables
+BOOT_DRIVE: db 0
+
+; Bootsector padding
+times 510-($-$$) db 0 dw 0xaa55
+
+; We know that BIOS will load only the first 512-byte sector from the disk, 
+; so if we purposely add a few more sectors to our code by repeating some
+; familiar numbers, we can prove to ourselfs that we actually loaded those 
+; additional two sectors from the disk we booted from.
+times 256 dw 0xdada 
+times 256 dw 0xface
+
+```
