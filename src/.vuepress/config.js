@@ -78,7 +78,11 @@ function zhLocales() {
         {
           title: "",
           collapsable: false,
-          children: ["introduction", "computer-architecture-and-the-boot-process", "boot-sector-programming"],
+          children: [
+            "introduction",
+            "computer-architecture-and-the-boot-process",
+            "boot-sector-programming",
+            "entering-32-bit-protected-mode"],
         },
       ],
       // "/guide/": [
