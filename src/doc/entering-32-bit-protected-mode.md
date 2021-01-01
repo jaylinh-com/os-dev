@@ -19,3 +19,48 @@
 哦，还有意见大事我差点忘了说：一旦我们进入了32位保护模式我们就不能继续使用BIOS服务了。如果你觉得调用BIOS服务是底层的。这像是退一步进两步。
 
 ## 4.1 适应没有 BIOS 的生活
+为了充分的利用CPU， 我们必须放弃 BIOS 提供的所有的有用的程序。我们将在切换到 32 位保护模式后看到，BIOS 程序是编写在16位实模式下工作的，在32 位保护模式下将不再有效，实际上，尝试使用它们将是计算机崩溃。
+
+所以这意味着我们的 32 位操作系统必须自己提供机器上所有的硬件的驱动（例如：键盘，显示器，磁盘驱动，和鼠标等）, 实际上，32 位保护模式的操作系统可以临时切换回 16 位实模式，然后使用BIOS程序，但是这样做非常的复杂，所以这样做是不值得的，特别是对于性能来说。
+
+当切换到保护模式后我们将遇到的第一问题是知道怎么向显示器打印信息，以便我们知道计算机当前的状态。之前我们通过使用BIOS程序来向显示器上打印一个ASCII字符，但是这个程序是怎么在计算机显示器上合适的位置打印高亮适当的像素呢？当前，我们只需要知道显示设备能在2种模式下配置成多种分辨率中的一种就够了，这2种模式是 文本模式 和 图形模式，并且显示器上显示的东西是特定内存块的视觉展示。所以为了操作显示器，我们必须操作当前模式下的特定内存块。以这种方式工作的硬件称为内存映射硬件，显示设备是其中的一种。
+
+无论计算机是否拥有更高级的图形硬件，大多数计算机启动时都是初始化为简单的 VGA（Video Graphics Array）文本模式以及80 * 25 字符的尺寸。在文本模式下，编程者不需要通过渲染单个像素来描述特定的字符，因为VGA显示设备内部内存种以及预定义了简单的字体。实际上显示器上每一个字符单元由内存中的2个字节表示：第一个字节是将被显示的字符的ASCII码，第二个字节是这个字符的属性编码，例如它的前景色和后景色，以及字符是否闪烁。
+
+所以如果我们希望在显示器上显示一个字符，在当前VGA模式下我们就需要在正确的内存地址处设置字符的ACII码和属性。这个地址通常在0xb8000处。如果我们简单的修改一下之前的(16位实模式)print_string 程序我们就可以不使用BIOS程序，而创建一个在32位保护模式下通过直接写入视频内存的方式的打印程序。如图表4.1所示。
+```nasm
+[bits 32]
+; define some constants
+VIDEO_MEMORY equ 0xb800
+WHITE_ON_BLACK equ 0x0f
+
+; print a null-terminated string pointed to by EDX
+print_string_pm:
+  pusha
+  mov edx, VIDEO_MEMORY         ; Set edx to the start of vid mem.
+  
+print_string_pm_loop:
+  mov al, [ebx]                 ; Store the char at ebx in al
+  mov ah, WHITE_ON_BLACK        ; Store the attributes in ah
+
+  cmp al, 0                     ; if (al == 0), at end of string, so
+  je done                       ; jump to done
+
+  mov [edx], ax                 ; store char and attributes at current
+  add ebx, 1                    ; increment ebx to the next char in string
+  add edx, 2                    ; Move to next character cell in vid mem.
+
+  jmp print_string_pm_loop      ; loop around to print the next char
+
+print_string_pm_done:
+  popa
+  ret                           ; Return from the function
+```
+>图表4.1: 直接写入视频内存来打印字符串的程序（即不实用BIOS程序）
+
+注意，尽管我们的显示器是以行和列来显示字符的，但是视频内存是简单连续的。例如：第3行第5列的地址应该这样计算 0xb8000 + 2 * (row * 80 + col)
+
+我们的程序还有问题，即它每次都是从左上角开始打印字符串，所以它每次打印都是覆盖上一次的打印而不是接着上一次打印。我们可以花一点时间来改正这个汇编程序，但是这里我们先不管它让事情简单点，因后当我们切换到保护模式后，我们可用引导使用高级语言编写的代码，这时我们可以轻易的解决打印这样的问题。
+
+## 4.2 理解全局描述符表
+
