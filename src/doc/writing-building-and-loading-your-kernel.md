@@ -1,0 +1,6 @@
+# 5.编写，构建，加载你的内核
+
+So far, we have learnt a lot about how the computer really works, by communicating with it in the low-level assembly language, but we’ve also seen how it can be very slow to progress in such a language: we need to think very carefully even about the simplest of control structures (e.g. if `(<something>) <do this> else <do that>)`, and we have to worry about how best to make use of the limited number of registers, and juggle with the stack. Another drawback of us continuing in assembly language is that it is closely tied to the specific CPU architecture, and so it would be harder for us to port our operating system to another CPU architecture (e.g. ARM, RISC, PowerPC).
+Luckily, other programmers also got fed up of writing in assembly, so decided to write higher-level language compilers (e.g. FORTRAN, C, Pascal, BASIC, etc.), that would transform more intuitive code into assembly language. The idea of these compilers is to map higher level constructs, such as control structures and function calls onto assembly template code, and so the downside --- and there usually always is a downside --- is that the generic templates may not always be optimal for specific functionality. Without further ado, let us look at how C code is transformed into assembly to demystify the role of the compiler.
+
+目前，我们已经学习了关于计算机怎么工作的

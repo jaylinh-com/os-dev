@@ -82,7 +82,9 @@ function zhLocales() {
             "introduction",
             "computer-architecture-and-the-boot-process",
             "boot-sector-programming",
-            "entering-32-bit-protected-mode"],
+            "entering-32-bit-protected-mode",
+            "writing-building-and-loading-your-kernel"
+          ],
         },
       ],
       // "/guide/": [
