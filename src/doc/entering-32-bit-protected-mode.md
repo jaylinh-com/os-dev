@@ -31,7 +31,7 @@
 ```nasm
 [bits 32]
 ; define some constants
-VIDEO_MEMORY equ 0xb800
+VIDEO_MEMORY equ 0xb8000
 WHITE_ON_BLACK equ 0x0f
 
 ; print a null-terminated string pointed to by EDX
@@ -189,11 +189,14 @@ gdt_descriptor:
   dw gdt_end -gdt_start -1    ; Size of our GDT, always less one of the true size
   dd gdt_start                ; Start address of our GDT
 
-  ; Define some handy constants for the GDT segment descriptor offsets, which
-  ; are what segment registers must contain when in protected mode. For example,
-  ; when we set ds = 0x10 im pm, the CPU knows that we mean it to use the 
-  ; segment described at offset 0x10 (即 16字节) in our GDT, which in our 
-  ; case is the DATA segment (0x0 -> null; 0x08 -> CODE; 0x10->DATA)
+; Define some handy constants for the GDT segment descriptor offsets, which
+; are what segment registers must contain when in protected mode. For example,
+; when we set ds = 0x10 im pm, the CPU knows that we mean it to use the 
+; segment described at offset 0x10 (即 16字节) in our GDT, which in our 
+; case is the DATA segment (0x0 -> null; 0x08 -> CODE; 0x10->DATA)
+CODE_SEG equ gdt_code - gdt_start
+DATA_SEG equ gdt_data - gdt_start
+
 ```
 
 
@@ -254,7 +257,7 @@ start_protected_mode:
 
 
 ```nasm
-[bit 16]
+[bits 16]
 ; Switch to protected mode
 switch_to_pm:
   cli                       ; We must switch off interrupts until we have 
@@ -285,7 +288,7 @@ init_pm:
   mov gs, ax
 
   mov ebp, 0x90000          ; Update our stack position so it is right
-  mov esp, eb               ; at the top of the free space.
+  mov esp, ebp              ; at the top of the free space.
 
   call BEGIN_PM             ; Finally, call some well-known label
 
