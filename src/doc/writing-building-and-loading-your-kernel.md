@@ -1,6 +1,50 @@
 # 5.编写，构建，加载你的内核
+目前，通过使用底层汇编语言与计算机交流，我们已经学习了很多关于计算机怎么工作的知识，但是我们也看到了使用汇编编程效率太低了：即使是非常简单的控制结构(例如：`if (<something>) <do this> else <do that>`)我们都要非常小心的思考，并且我们还需要考虑怎么使用有限的寄存器，同时考虑栈问题。继续使用汇编语言还有一个问题，汇编语言强依赖特定的CPU 架构，所以很难将我们的操作系统移植到其他的CPU 架构上(例如：ARM， RISC， PowerPC)。
 
-So far, we have learnt a lot about how the computer really works, by communicating with it in the low-level assembly language, but we’ve also seen how it can be very slow to progress in such a language: we need to think very carefully even about the simplest of control structures (e.g. if `(<something>) <do this> else <do that>)`, and we have to worry about how best to make use of the limited number of registers, and juggle with the stack. Another drawback of us continuing in assembly language is that it is closely tied to the specific CPU architecture, and so it would be harder for us to port our operating system to another CPU architecture (e.g. ARM, RISC, PowerPC).
-Luckily, other programmers also got fed up of writing in assembly, so decided to write higher-level language compilers (e.g. FORTRAN, C, Pascal, BASIC, etc.), that would transform more intuitive code into assembly language. The idea of these compilers is to map higher level constructs, such as control structures and function calls onto assembly template code, and so the downside --- and there usually always is a downside --- is that the generic templates may not always be optimal for specific functionality. Without further ado, let us look at how C code is transformed into assembly to demystify the role of the compiler.
+幸运的是，其他的编程人员也厌倦了汇编语言，所以决定编写高级语言编译器(例如： FORTRAN， C， Pascal, BASIC, 等), 这些编译器可以将更直观的代码转换为汇编语言。这些编译器的思想是将高级语言结构，例如控制结构和函数调用映射为汇编模版代码，但是通用模版并不对所有的特定函数进行优化，这也是其缺点。这里不再深入，我们继续来看看C语言代码怎么转换为汇编来揭开编译器神秘的面纱。
 
-目前，我们已经学习了关于计算机怎么工作的
+## 5.1 了解 C 编译
+让我们写一小段 C 代码 然后来看看它们会编译成什么汇编代码。这是学习关于 C 的原理的极好的方式。
+
+### 5.1.1 生成原始机器码
+```c
+// Define an empty function that returns an integer
+int my_function() {
+    return 0xbaba;
+}
+```
+
+将上面的代码保存到 `basic.c` 文件中, 然后使用下面的命令编译它：
+``bash
+$gcc -ffreestanding -c basic.c -o basic.o
+``
+
+这将生成一个 *对象文件*, 这里的对象不要与面向对象编程中的对象概念混淆来，它们互不相干。这里编译器没有将代码直接编译成机器码。而是编译输出一个含有 *注解* 的机器码文件。这些注解元信息对程序的执行是多余的，留下它们是为了在最终合并所有的代码时提供方便。这种临时输出格式的一个最大的优势是当与其他的库中的其他程序链接的时候代码很容易的重新定位到大二进制文件中。因为对象文件中的代码使用相对地址而不是绝对内存地址引用。我们可以使用下面的命令来查看对象文件中的内容：
+```bash
+$objdump -d basic.o
+```
+
+这个命令将产生如下图所示的内容。注意我们可以看到一些汇编指令和关于代码的一些额外信息。另外注意这里生成的汇编语法与我们使用的 nasm 语法稍微有写不同，我们将在后面看到对象文件生成我们熟悉的汇编语法，这里先简单的忽略它们的区别。
+``` nasm
+basic.o:     file format elf32-i386
+
+
+Disassembly of section .text:
+
+00000000 <my_function>:
+   0:   55                      push   %ebp
+   1:   89 e5                   mov    %esp,%ebp
+   3:   b8 ba ba 00 00          mov    $0xbaba,%eax
+   8:   5d                      pop    %ebp
+   9:   c3                      ret    
+```
+
+为了创建实际的可执行代码(即将在CPU上运行的),我们需要使用 *链接器*, 它的作用是将输入对象文件中描述的所有的文件链接成一个可执行二进制文件，将它们拼接在一起然后在聚合的机器代码里将所有的相对地址转换成绝对地址。例如：`call <function X label>` 将变成 `call 0x12345`, 这里 `0x12345` 是链接器决定将使用 `function X label` 声明的程序放置到输出文件的偏移量。
+
+尽管这里我们不需要链接其他对象文件中的任何程序。但是后面我们将看到链接器会将我们的含有注解的机器代码文件转换成原始机器代码文件。使用下面的命令将原始机器码文件输出到 `basic.bin` 文件中。
+```bash
+$ld -o basic.bin -Ttext 0x0 --oformat binary basic.o
+```
+
+注意，同编译器一样，链接器也能输出多种不同格式的可执行文件，其中的一些将保留输入对象文件中的元数据。这对于部署在操作系统上的可执行文件很有用，例如我们编写的大多数程序都是编写到例如LInux 或者 windows 的平台上，因元数据可以被留下来用于描述我们的程序将怎么被加载到内存中，另外对于调试目的也有用，例如一个进程在指令地址0x12345678处崩溃的信息对程序员来说远不如使用额外的不能执行的元数据表示的信息有用，比如进程在 `basic.c` 文件第三行的函数 `my function` 中崩溃.
+ 
